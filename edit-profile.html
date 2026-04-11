@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Редактировать профиль — Glists</title>
+    <style>
+        body { background: #f0f2f5; font-family: system-ui; padding: 20px; }
+        .container { max-width: 600px; margin: auto; background: white; border-radius: 16px; padding: 20px; }
+        .avatar-preview { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin-bottom: 20px; }
+        input, textarea, button { width: 100%; margin: 8px 0; padding: 10px; border-radius: 8px; border: 1px solid #ddd; }
+        button { background: #1877f2; color: white; border: none; cursor: pointer; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Редактирование профиля</h1>
+    <div id="status"></div>
+    <img id="avatarPreview" class="avatar-preview" src="">
+    <input type="file" id="avatarInput" accept="image/jpeg,image/png,image/gif">
+    <input type="text" id="displayNameInput" placeholder="Отображаемое имя">
+    <textarea id="bioInput" placeholder="О себе" rows="3"></textarea>
+    <button id="saveBtn">Сохранить</button>
+    <a href="/profile.html?user=normikchel">Назад</a>
+</div>
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, doc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const config = {
+        apiKey: "AIzaSyCzqpQniq7LiwRZ_L_FKEsIXh6CfC76QHA",
+        authDomain: "myfirstsocialnetwork-0.firebaseapp.com",
+        projectId: "myfirstsocialnetwork-0",
+        storageBucket: "myfirstsocialnetwork-0.firebasestorage.app",
+        messagingSenderId: "557037045975",
+        appId: "1:557037045975:web:dbcbd7ca0111a1494ac892"
+    };
+    const app = initializeApp(config);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Cloudinary настройки (заполни своими)
+    const CLOUD_NAME = "dbmiuq6s7";
+    const UPLOAD_PRESET = "glists_preset";
+
+    const avatarInput = document.getElementById('avatarInput');
+    const avatarPreview = document.getElementById('avatarPreview');
+    const displayNameInput = document.getElementById('displayNameInput');
+    const bioInput = document.getElementById('bioInput');
+    const saveBtn = document.getElementById('saveBtn');
+    const statusDiv = document.getElementById('status');
+
+    let currentUser = null;
+    let currentUsername = null;
+    let uploadedAvatarUrl = null;
+
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) { window.location.href = '/'; return; }
+        currentUser = user;
+        const q = query(collection(db, 'users'), where('uid', '==', user.uid));
+        const snap = await getDocs(q);
+        if (snap.empty) { statusDiv.innerText = 'Профиль не найден'; return; }
+        currentUsername = snap.docs[0].id;
+        const data = snap.docs[0].data();
+        displayNameInput.value = data.displayName || '';
+        bioInput.value = data.bio || '';
+        if (data.avatarUrl) avatarPreview.src = data.avatarUrl;
+    });
+
+    avatarInput.onchange = () => {
+        const file = avatarInput.files[0];
+        if (!file) return;
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', UPLOAD_PRESET);
+        fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            uploadedAvatarUrl = data.secure_url;
+            avatarPreview.src = uploadedAvatarUrl;
+            statusDiv.innerText = 'Аватарка загружена';
+        })
+        .catch(err => { statusDiv.innerText = 'Ошибка загрузки: ' + err.message; });
+    };
+
+    saveBtn.onclick = async () => {
+        statusDiv.innerText = 'Сохранение...';
+        try {
+            const userDocRef = doc(db, 'users', currentUsername);
+            const updateData = {
+                displayName: displayNameInput.value,
+                bio: bioInput.value
+            };
+            if (uploadedAvatarUrl) updateData.avatarUrl = uploadedAvatarUrl;
+            await updateDoc(userDocRef, updateData);
+            statusDiv.innerText = 'Сохранено!';
+            setTimeout(() => { window.location.href = `/profile.html?user=${currentUsername}`; }, 1000);
+        } catch (err) {
+            statusDiv.innerText = 'Ошибка: ' + err.message;
+        }
+    };
+</script>
+</body>
+</html>
