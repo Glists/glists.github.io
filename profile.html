@@ -10,8 +10,48 @@
         .container { max-width: 600px; margin: auto; background: var(--bg-container); border-radius: 16px; padding: 20px; }
         .avatar { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; background: #1877f2; color: white; display: flex; align-items: center; justify-content: center; font-size: 2rem; }
         .post { border-left: 4px solid #1877f2; margin: 10px 0; padding: 10px; background: var(--post-bg); border-radius: 8px; }
-        .verified-icon { display: inline-flex; margin-left: 4px; vertical-align: middle; }
         .back-link { display: inline-block; margin-top: 20px; color: #1877f2; text-decoration: none; }
+
+        /* Стили для тултипа */
+        .verified-wrapper {
+            display: inline-flex;
+            position: relative;
+            cursor: pointer;
+        }
+        .verified-tooltip {
+            position: absolute;
+            bottom: 120%;
+            left: 50%;
+            transform: translateX(-50%) translateY(8px);
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            font-size: 0.75rem;
+            padding: 6px 10px;
+            border-radius: 8px;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            z-index: 10;
+            font-weight: normal;
+            letter-spacing: 0.3px;
+            backdrop-filter: blur(4px);
+        }
+        .verified-wrapper:hover .verified-tooltip {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        /* Стрелочка снизу тултипа */
+        .verified-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: rgba(0, 0, 0, 0.85) transparent transparent transparent;
+        }
     </style>
 </head>
 <body>
@@ -35,6 +75,8 @@
 
     const params = new URLSearchParams(location.search);
     const username = params.get('user');
+
+    // SVG иконка верификации (синяя галочка)
     const verifiedSVG = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path fill="rgb(0, 149, 246)" d="M8.248 2.87a2.198 2.198 0 0 1 3.504 0c.48.633 1.264.958 2.05.85a2.198 2.198 0 0 1 2.478 2.477 2.2 2.2 0 0 0 .85 2.051 2.198 2.198 0 0 1 0 3.504 2.2 2.2 0 0 0-.85 2.05 2.198 2.198 0 0 1-2.477 2.478 2.2 2.2 0 0 0-2.051.85 2.198 2.198 0 0 1-3.504 0 2.2 2.2 0 0 0-2.05-.85 2.198 2.198 0 0 1-2.478-2.477 2.2 2.2 0 0 0-.85-2.051 2.198 2.198 0 0 1 0-3.504c.633-.48.958-1.264.85-2.05A2.198 2.198 0 0 1 6.197 3.72a2.2 2.2 0 0 0 2.051-.85"></path><path fill="#fff" fill-rule="evenodd" d="M13.765 7.205a.75.75 0 0 1 .03 1.06l-4.25 4.5a.75.75 0 0 1-1.047.042l-2.25-2.025A.75.75 0 0 1 7.25 9.667l1.706 1.536 3.748-3.968a.75.75 0 0 1 1.06-.03z" clip-rule="evenodd"></path></svg>`;
 
     let currentUser = null;
@@ -65,13 +107,21 @@
             let editButton = '';
             if (isOwnProfile) editButton = `<div style="margin-top: 10px;"><a href="/edit-profile.html" style="display:inline-block; background:#1877f2; color:white; padding:8px 16px; border-radius:20px; text-decoration:none;">✏️ Редактировать профиль</a></div>`;
 
+            // Генерация HTML для верификации с тултипом
+            const verifiedBadge = verified ? `
+                <div class="verified-wrapper">
+                    <span class="verified-icon">${verifiedSVG}</span>
+                    <span class="verified-tooltip">Верифицированный пользователь</span>
+                </div>
+            ` : '';
+
             document.getElementById('root').innerHTML = `
                 <div style="display:flex; gap:20px; align-items:center;">
                     <div class="avatar">
                         ${avatarUrl ? `<img src="${escapeHtml(avatarUrl)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">` : `<div style="width:80px;height:80px;border-radius:50%;background:#1877f2;display:flex;align-items:center;justify-content:center;font-size:2rem;">${displayName.charAt(0).toUpperCase()}</div>`}
                     </div>
                     <div>
-                        <h1>${escapeHtml(displayName)} ${verified ? `<span class="verified-icon">${verifiedSVG}</span>` : ''}</h1>
+                        <h1>${escapeHtml(displayName)} ${verifiedBadge}</h1>
                         <p>@${escapeHtml(username)}</p>
                         <p>${escapeHtml(data.bio || '')}</p>
                         ${editButton}
