@@ -106,9 +106,9 @@
                     postDiv.className = 'post';
                     postDiv.innerHTML = `
                         <div class="post-header">
-                            <a href="/user/${escapeHtml(username)}" style="color: inherit; text-decoration: none;">
-                                <strong>${escapeHtml(data.email)}</strong>
-                            </a>
+                            <a href="/profile.html?user=${escapeHtml(username)}" style="color: inherit; text-decoration: none;">
+								<strong>${escapeHtml(data.email)}</strong>
+							</a>
                             <span class="post-date">${date}</span>
                         </div>
                         <div class="post-text">${escapeHtml(data.text)}</div>

@@ -2,92 +2,19 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Профиль Glists</title>
+    <title>Glists – Профиль</title>
     <style>
-        body { font-family: system-ui; background: var(--bg-body); margin: 0; padding: 20px; }
+        body { font-family: system-ui; background: #f0f2f5; margin: 0; padding: 20px; }
         .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; padding: 20px; }
         .profile-header { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; }
         .avatar { width: 80px; height: 80px; border-radius: 50%; background: #1877f2; color: white; display: flex; align-items: center; justify-content: center; font-size: 2rem; }
         h1 { margin: 0; }
-        .verified { color: rgb(0, 149, 246); display: inline-block; margin-left: 5px; }
         .post { border-left: 4px solid #1877f2; margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 8px; }
         .back-link { display: inline-block; margin-top: 20px; color: #1877f2; text-decoration: none; }
     </style>
 </head>
 <body>
-<div class="container" id="profileContainer">
-    <div id="loading">Загрузка профиля...</div>
-</div>
-
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-    // ТВОЙ КОНФИГ (скопируй из index.html)
-    const firebaseConfig = {
-        apiKey: "AIzaSyCzqpQniq7LiwRZ_L_FKEsIXh6CfC76QHA",
-        authDomain: "myfirstsocialnetwork-0.firebaseapp.com",
-        projectId: "myfirstsocialnetwork-0",
-        storageBucket: "myfirstsocialnetwork-0.firebasestorage.app",
-        messagingSenderId: "557037045975",
-        appId: "1:557037045975:web:dbcbd7ca0111a1494ac892"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    // Получаем ник из URL: https://glists.github.io/user/normikchel
-    const path = window.location.pathname; // например "/user/normikchel"
-    const match = path.match(/\/user\/([^\/]+)/);
-    const username = match ? match[1] : null;
-
-    if (!username) {
-        document.getElementById('profileContainer').innerHTML = '<p>Неверная ссылка на профиль</p>';
-    } else {
-        // Ищем пользователя в Firestore. У нас нет отдельной коллекции users, поэтому ищем по email или по полю username.
-        // Сначала попробуем найти по email, если ник — это email без @. Но проще завести коллекцию users.
-        // Для простоты: будем считать, что ник — это полный email. Но ты хотел "normikchel". 
-        // Сделаем так: при регистрации добавляем поле username в Firestore. 
-        // Но чтобы не переписывать сейчас регистрацию, временно ищем по email, а в будущем добавим username.
-        // Временно: ищем по email, содержащему username (если username не содержит @). 
-        let searchEmail = username.includes('@') ? username : username + '@glists.com';
-        const usersRef = collection(db, "users"); // Этой коллекции пока нет, создадим её вручную.
-        // Но проще: мы можем искать посты пользователя и брать email из них. Однако надёжнее создать коллекцию users.
-        // Я дам код, который создаст запись в users при первом входе (добавь в index.html). Сейчас просто покажем заглушку.
-        document.getElementById('profileContainer').innerHTML = `
-            <h1>Профиль @${username}</h1>
-            <p>Пока здесь пусто. Скоро: посты пользователя, аватар, описание.</p>
-            <a href="/" class="back-link">← На главную</a>
-        `;
-    }
-</script>
-</body>
-</html><!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Glists – Профиль</title>
-    <style>
-        body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .profile-header { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
-        .avatar { width: 80px; height: 80px; border-radius: 50%; background: #1877f2; color: white; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: bold; }
-        h1 { margin: 0; font-size: 1.8rem; }
-        .verified { display: inline-block; margin-left: 5px; vertical-align: middle; }
-        .bio { color: #555; margin-top: 5px; }
-        .post { border-left: 4px solid #1877f2; margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 8px; }
-        .post-header { font-size: 0.8rem; color: #777; margin-bottom: 5px; }
-        .post-text { font-size: 1rem; }
-        .back-link { display: inline-block; margin-top: 20px; color: #1877f2; text-decoration: none; font-weight: bold; }
-        .loading, .error { text-align: center; padding: 40px; }
-    </style>
-</head>
-<body>
-<div class="container" id="profileContainer">
-    <div class="loading">Загрузка профиля...</div>
-</div>
+<div class="container" id="profileContainer">Загрузка...</div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -105,77 +32,47 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Получаем имя пользователя из параметра ?user=
     const urlParams = new URLSearchParams(window.location.search);
     const username = urlParams.get('user');
 
     if (!username) {
-        document.getElementById('profileContainer').innerHTML = `
-            <div class="error">Не указан пользователь</div>
-            <a href="/" class="back-link">← На главную</a>
-        `;
+        document.getElementById('profileContainer').innerHTML = '<p>Не указан пользователь</p><a href="/" class="back-link">← На главную</a>';
     } else {
-        // Загружаем документ пользователя из коллекции users
         const userRef = doc(db, "users", username);
         const userSnap = await getDoc(userRef);
-        
         if (!userSnap.exists()) {
-            document.getElementById('profileContainer').innerHTML = `
-                <div class="error">Пользователь @${escapeHtml(username)} не найден</div>
-                <a href="/" class="back-link">← На главную</a>
-            `;
+            document.getElementById('profileContainer').innerHTML = `<p>Пользователь @${username} не найден</p><a href="/" class="back-link">← На главную</a>`;
         } else {
             const userData = userSnap.data();
             const verified = userData.verified || false;
             const bio = userData.bio || "Нет описания";
-            const displayName = userData.displayName || username;
             const uid = userData.uid;
 
-            // Загружаем посты этого пользователя
             const postsQuery = query(collection(db, "posts"), where("uid", "==", uid), orderBy("createdAt", "desc"));
             const postsSnap = await getDocs(postsQuery);
-            
             let postsHtml = '';
-            if (postsSnap.empty) {
-                postsHtml = '<p>Пока нет постов</p>';
-            } else {
-                postsSnap.forEach(docSnap => {
-                    const post = docSnap.data();
-                    const date = post.createdAt ? new Date(post.createdAt.toDate()).toLocaleString() : "только что";
-                    postsHtml += `
-                        <div class="post">
-                            <div class="post-header">${date}</div>
-                            <div class="post-text">${escapeHtml(post.text)}</div>
-                        </div>
-                    `;
-                });
-            }
+            postsSnap.forEach(docSnap => {
+                const post = docSnap.data();
+                const date = post.createdAt ? new Date(post.createdAt.toDate()).toLocaleString() : "только что";
+                postsHtml += `<div class="post"><div class="post-header">${date}</div><div>${escapeHtml(post.text)}</div></div>`;
+            });
 
-            const avatarLetter = username.charAt(0).toUpperCase();
             document.getElementById('profileContainer').innerHTML = `
                 <div class="profile-header">
-                    <div class="avatar">${escapeHtml(avatarLetter)}</div>
+                    <div class="avatar">${username.charAt(0).toUpperCase()}</div>
                     <div>
-                        <h1>@${escapeHtml(username)} ${verified ? '<span class="verified">✅</span>' : ''}</h1>
-                        <div class="bio">${escapeHtml(bio)}</div>
+                        <h1>@${username} ${verified ? '✅' : ''}</h1>
+                        <p>${escapeHtml(bio)}</p>
                     </div>
                 </div>
                 <h3>Посты:</h3>
-                ${postsHtml}
+                ${postsHtml || '<p>Нет постов</p>'}
                 <a href="/" class="back-link">← На главную</a>
             `;
         }
     }
 
-    function escapeHtml(str) {
-        if (!str) return '';
-        return str.replace(/[&<>]/g, function(m) {
-            if (m === '&') return '&amp;';
-            if (m === '<') return '&lt;';
-            if (m === '>') return '&gt;';
-            return m;
-        });
-    }
+    function escapeHtml(str) { return str.replace(/[&<>]/g, function(m) { return m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;'; }); }
 </script>
 </body>
 </html>
