@@ -14,6 +14,8 @@
             --comment-bg: #f1f3f5;
             --like-btn: #1877f2;
             --like-btn-active: #e0245e;
+            --dislike-btn: #6c757d;
+            --dislike-btn-active: #dc3545;
         }
         body.dark {
             --bg-body: #1a1a2e;
@@ -25,6 +27,8 @@
             --comment-bg: #1a2a4a;
             --like-btn: #4a9eff;
             --like-btn-active: #ff4d6d;
+            --dislike-btn: #8c8f9e;
+            --dislike-btn-active: #ff6b6b;
         }
         * { box-sizing: border-box; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
         body { background: var(--bg-body); margin: 0; padding: 20px; transition: background 0.2s; }
@@ -36,14 +40,19 @@
         button { background: #1877f2; color: white; border: none; cursor: pointer; font-weight: bold; }
         button:hover { background: #0e5dc7; }
         .post { background: var(--post-bg); margin: 10px 0; padding: 10px; border-left: 4px solid #1877f2; border-radius: 8px; }
+        .repost-badge { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
         .post-header { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.8rem; color: var(--text-secondary); }
         .post-author { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .post-author a { color: var(--text-primary); text-decoration: none; font-weight: bold; }
         .small-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #1877f2; display: inline-flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1rem; }
         .delete-btn, .delete-comment-btn { background: #dc3545; color: white; border: none; border-radius: 20px; padding: 4px 12px; cursor: pointer; font-size: 0.7rem; }
         .verified-icon { display: inline-flex; margin-left: 4px; vertical-align: middle; }
-        .like-btn { background: none; border: none; cursor: pointer; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 20px; color: var(--like-btn); }
+        .like-btn, .dislike-btn, .repost-btn { background: none; border: none; cursor: pointer; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 20px; }
+        .like-btn { color: var(--like-btn); }
         .like-btn.liked { color: var(--like-btn-active); font-weight: bold; }
+        .dislike-btn { color: var(--dislike-btn); }
+        .dislike-btn.disliked { color: var(--dislike-btn-active); font-weight: bold; }
+        .repost-btn { color: #28a745; }
         .comments-section { margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--border-color); }
         .comment { display: flex; gap: 8px; margin: 8px 0; background: var(--comment-bg); border-radius: 12px; padding: 6px 10px; align-items: flex-start; }
         .comment-avatar { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; background: #1877f2; display: inline-flex; align-items: center; justify-content: center; color: white; font-size: 0.7rem; }
@@ -54,6 +63,8 @@
         .add-comment { display: flex; gap: 8px; margin-top: 8px; }
         .add-comment input { flex: 1; margin: 0; padding: 6px; font-size: 0.8rem; }
         .add-comment button { margin: 0; padding: 6px 12px; }
+        .original-post-link { font-size: 0.75rem; margin-top: 5px; }
+        .original-post-link a { color: #1877f2; text-decoration: none; }
     </style>
 </head>
 <body>
@@ -96,8 +107,8 @@
     const verifiedSVG = `<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path fill="rgb(0, 149, 246)" d="M8.248 2.87a2.198 2.198 0 0 1 3.504 0c.48.633 1.264.958 2.05.85a2.198 2.198 0 0 1 2.478 2.477 2.2 2.2 0 0 0 .85 2.051 2.198 2.198 0 0 1 0 3.504 2.2 2.2 0 0 0-.85 2.05 2.198 2.198 0 0 1-2.477 2.478 2.2 2.2 0 0 0-2.051.85 2.198 2.198 0 0 1-3.504 0 2.2 2.2 0 0 0-2.05-.85 2.198 2.198 0 0 1-2.478-2.477 2.2 2.2 0 0 0-.85-2.051 2.198 2.198 0 0 1 0-3.504c.633-.48.958-1.264.85-2.05A2.198 2.198 0 0 1 6.197 3.72a2.2 2.2 0 0 0 2.051-.85"></path><path fill="#fff" fill-rule="evenodd" d="M13.765 7.205a.75.75 0 0 1 .03 1.06l-4.25 4.5a.75.75 0 0 1-1.047.042l-2.25-2.025A.75.75 0 0 1 7.25 9.667l1.706 1.536 3.748-3.968a.75.75 0 0 1 1.06-.03z" clip-rule="evenodd"></path></svg>`;
 
     const translations = {
-        ru: { greeting: "Привет", feedTitle: "Лента:", placeholder: "Что нового?", login: "Вход", register: "Регистрация", logout: "Выйти", publish: "Опубликовать", like: "Нравится", delete: "Удалить", addComment: "Написать комментарий", commentPlaceholder: "Ваш комментарий..." },
-        en: { greeting: "Hello", feedTitle: "Feed:", placeholder: "What's new?", login: "Login", register: "Register", logout: "Logout", publish: "Publish", like: "Like", delete: "Delete", addComment: "Add comment", commentPlaceholder: "Your comment..." }
+        ru: { greeting: "Привет", feedTitle: "Лента:", placeholder: "Что нового?", login: "Вход", register: "Регистрация", logout: "Выйти", publish: "Опубликовать", like: "Нравится", dislike: "Не нравится", repost: "Репост", delete: "Удалить", addComment: "Написать комментарий", commentPlaceholder: "Ваш комментарий...", reposted: "Репостнул(а)" },
+        en: { greeting: "Hello", feedTitle: "Feed:", placeholder: "What's new?", login: "Login", register: "Register", logout: "Logout", publish: "Publish", like: "Like", dislike: "Dislike", repost: "Repost", delete: "Delete", addComment: "Add comment", commentPlaceholder: "Your comment...", reposted: "Reposted" }
     };
     let currentLang = localStorage.getItem('glists_lang') || 'ru';
     function setLanguage(lang) { currentLang = lang; localStorage.setItem('glists_lang', lang); document.getElementById('langToggle').innerText = lang === 'ru' ? '🌐 EN' : '🌐 RU'; if (auth.currentUser) updateUIText(); }
@@ -145,16 +156,56 @@
         return null;
     }
 
-    async function toggleLike(postId, userId) {
+    async function toggleReaction(postId, userId, type) { // type: 'like' or 'dislike'
         const likeRef = doc(db, 'likes', `${postId}_${userId}`);
+        const dislikeRef = doc(db, 'dislikes', `${postId}_${userId}`);
         const likeSnap = await getDoc(likeRef);
-        if (likeSnap.exists()) {
-            await deleteDoc(likeRef);
-            await updateDoc(doc(db, 'posts', postId), { likesCount: increment(-1) });
-        } else {
-            await setDoc(likeRef, { postId, userId, createdAt: new Date() });
-            await updateDoc(doc(db, 'posts', postId), { likesCount: increment(1) });
+        const dislikeSnap = await getDoc(dislikeRef);
+        if (type === 'like') {
+            if (likeSnap.exists()) {
+                await deleteDoc(likeRef);
+                await updateDoc(doc(db, 'posts', postId), { likesCount: increment(-1) });
+            } else {
+                if (dislikeSnap.exists()) {
+                    await deleteDoc(dislikeRef);
+                    await updateDoc(doc(db, 'posts', postId), { dislikesCount: increment(-1) });
+                }
+                await setDoc(likeRef, { postId, userId, createdAt: new Date() });
+                await updateDoc(doc(db, 'posts', postId), { likesCount: increment(1) });
+            }
+        } else if (type === 'dislike') {
+            if (dislikeSnap.exists()) {
+                await deleteDoc(dislikeRef);
+                await updateDoc(doc(db, 'posts', postId), { dislikesCount: increment(-1) });
+            } else {
+                if (likeSnap.exists()) {
+                    await deleteDoc(likeRef);
+                    await updateDoc(doc(db, 'posts', postId), { likesCount: increment(-1) });
+                }
+                await setDoc(dislikeRef, { postId, userId, createdAt: new Date() });
+                await updateDoc(doc(db, 'posts', postId), { dislikesCount: increment(1) });
+            }
         }
+    }
+
+    async function repost(originalPostId, originalAuthorUid, originalAuthorUsername, originalAuthorDisplayName, originalText, currentUser) {
+        const info = await getUserInfo(currentUser.uid);
+        const authorUsername = info ? info.username : currentUser.email.split('@')[0];
+        const authorDisplayName = info ? info.displayName : authorUsername;
+        const authorAvatar = info ? info.avatarUrl : '';
+        await addDoc(collection(db, "posts"), {
+            type: 'repost',
+            originalPostId: originalPostId,
+            originalAuthorUid: originalAuthorUid,
+            originalAuthorUsername: originalAuthorUsername,
+            originalAuthorDisplayName: originalAuthorDisplayName,
+            originalText: originalText.substring(0, 100) + (originalText.length > 100 ? '...' : ''),
+            uid: currentUser.uid,
+            email: currentUser.email,
+            authorUsername, authorDisplayName, authorAvatar,
+            createdAt: new Date(),
+            likesCount: 0, dislikesCount: 0
+        });
     }
 
     async function addComment(postId, text, user) {
@@ -185,12 +236,15 @@
                 const postId = docSnap.id;
                 const date = data.createdAt ? new Date(data.createdAt.toDate()).toLocaleString() : "";
                 const isOwner = currentUser && currentUser.uid === data.uid;
-                let liked = false;
+                
+                let liked = false, disliked = false;
                 if (currentUser) {
                     const likeRef = doc(db, 'likes', `${postId}_${currentUser.uid}`);
-                    const likeSnap = await getDoc(likeRef);
-                    liked = likeSnap.exists();
+                    const dislikeRef = doc(db, 'dislikes', `${postId}_${currentUser.uid}`);
+                    liked = (await getDoc(likeRef)).exists();
+                    disliked = (await getDoc(dislikeRef)).exists();
                 }
+                
                 let displayName = data.authorDisplayName;
                 let authorUsername = data.authorUsername;
                 let avatarUrl = data.authorAvatar;
@@ -212,10 +266,17 @@
                 }
                 const avatarHtml = avatarUrl ? `<img src="${escapeHtml(avatarUrl)}" class="small-avatar">` : `<div class="small-avatar">${displayName.charAt(0).toUpperCase()}</div>`;
                 
+                let repostHtml = '';
+                if (data.type === 'repost') {
+                    repostHtml = `<div class="repost-badge">🔁 ${translations[currentLang].reposted} <a href="/profile.html?user=${escapeHtml(data.originalAuthorUsername)}">${escapeHtml(data.originalAuthorDisplayName)}</a></div>
+                    <div class="original-post-link"><a href="/profile.html?user=${escapeHtml(data.originalAuthorUsername)}">@${escapeHtml(data.originalAuthorUsername)}</a>: ${escapeHtml(data.originalText)}</div>`;
+                }
+                
                 const postDiv = document.createElement('div');
                 postDiv.className = 'post';
                 postDiv.id = `post-${postId}`;
                 postDiv.innerHTML = `
+                    ${repostHtml}
                     <div class="post-header">
                         <div class="post-author">
                             ${avatarHtml}
@@ -224,9 +285,11 @@
                         </div>
                         <span class="post-date">${date}</span>
                     </div>
-                    <div class="post-text">${escapeHtml(data.text)}</div>
-                    <div style="display: flex; gap: 10px; align-items: center;">
+                    ${data.type !== 'repost' ? `<div class="post-text">${escapeHtml(data.text)}</div>` : ''}
+                    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                         <button class="like-btn ${liked ? 'liked' : ''}" data-postid="${postId}">❤️ ${data.likesCount || 0}</button>
+                        <button class="dislike-btn ${disliked ? 'disliked' : ''}" data-postid="${postId}">👎 ${data.dislikesCount || 0}</button>
+                        ${currentUser ? `<button class="repost-btn" data-postid="${postId}" data-originalid="${postId}" data-uid="${data.uid}" data-username="${escapeHtml(authorUsername)}" data-displayname="${escapeHtml(displayName)}" data-text="${escapeHtml(data.text)}">🔁 ${translations[currentLang].repost}</button>` : ''}
                         ${isOwner ? `<button class="delete-btn" data-id="${postId}">${translations[currentLang].delete}</button>` : ''}
                     </div>
                     <div class="comments-section" id="comments-${postId}">
@@ -239,11 +302,15 @@
                 `;
                 feedList.appendChild(postDiv);
                 
-                const likeBtn = postDiv.querySelector('.like-btn');
-                if (likeBtn && currentUser) likeBtn.onclick = () => toggleLike(postId, currentUser.uid);
-                if (isOwner) postDiv.querySelector('.delete-btn').onclick = () => deleteDoc(doc(db, "posts", postId));
+                postDiv.querySelector('.like-btn')?.addEventListener('click', () => toggleReaction(postId, currentUser?.uid, 'like'));
+                postDiv.querySelector('.dislike-btn')?.addEventListener('click', () => toggleReaction(postId, currentUser?.uid, 'dislike'));
+                if (currentUser) {
+                    postDiv.querySelector('.repost-btn')?.addEventListener('click', () => {
+                        repost(postId, data.uid, authorUsername, displayName, data.text || '', currentUser);
+                    });
+                }
+                if (isOwner) postDiv.querySelector('.delete-btn')?.addEventListener('click', () => deleteDoc(doc(db, "posts", postId)));
                 
-                // Подписка на комментарии для этого поста
                 const commentsQuery = query(collection(db, 'comments'), where('postId', '==', postId), orderBy('createdAt', 'asc'));
                 onSnapshot(commentsQuery, (commentsSnap) => {
                     const commentsListDiv = postDiv.querySelector('.comments-list');
@@ -266,9 +333,7 @@
                             ${isCommentOwner ? `<button class="delete-comment-btn" data-commentid="${commentId}">🗑</button>` : ''}
                         `;
                         commentsListDiv.appendChild(commentDiv);
-                        if (isCommentOwner) {
-                            commentDiv.querySelector('.delete-comment-btn').onclick = () => deleteComment(commentId);
-                        }
+                        if (isCommentOwner) commentDiv.querySelector('.delete-comment-btn').onclick = () => deleteComment(commentId);
                     });
                 });
                 
@@ -276,9 +341,7 @@
                 const commentInput = postDiv.querySelector('.comment-input');
                 addCommentBtn.onclick = async () => {
                     if (!currentUser) { alert("Войдите, чтобы комментировать"); return; }
-                    const text = commentInput.value;
-                    if (!text.trim()) return;
-                    await addComment(postId, text, currentUser);
+                    await addComment(postId, commentInput.value, currentUser);
                     commentInput.value = '';
                 };
             }
@@ -313,9 +376,9 @@
         const authorDisplayName = info ? info.displayName : authorUsername;
         const authorAvatar = info ? info.avatarUrl : '';
         await addDoc(collection(db, "posts"), {
-            text, uid: user.uid, email: user.email,
+            type: 'post', text, uid: user.uid, email: user.email,
             authorUsername, authorDisplayName, authorAvatar,
-            createdAt: new Date(), likesCount: 0
+            createdAt: new Date(), likesCount: 0, dislikesCount: 0
         });
         postInput.value = "";
     };
