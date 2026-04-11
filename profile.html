@@ -3,7 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <title>Glists - Profile</title>
-    <link rel="stylesheet" href="/style.css">
+    <style>
+        :root { --bg-body: #f0f2f5; --bg-container: white; --text-primary: #1e2a3e; --text-secondary: #555; --border-color: #ddd; --post-bg: #f8f9fa; }
+        body.dark { --bg-body: #1a1a2e; --bg-container: #16213e; --text-primary: #eee; --text-secondary: #aaa; --border-color: #2c3e50; --post-bg: #0f3460; }
+        body { font-family: system-ui; background: var(--bg-body); margin: 0; padding: 20px; transition: background 0.2s; }
+        .container { max-width: 600px; margin: auto; background: var(--bg-container); border-radius: 16px; padding: 20px; }
+        .avatar { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; background: #1877f2; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: white; }
+        .post { border-left: 4px solid #1877f2; margin: 10px 0; padding: 10px; background: var(--post-bg); border-radius: 8px; }
+        .verified-icon { display: inline-flex; margin-left: 4px; vertical-align: middle; }
+        .back-link { display: inline-block; margin-top: 20px; color: #1877f2; text-decoration: none; }
+        .message-btn, .block-btn { background: #6c757d; color: white; border: none; border-radius: 20px; padding: 6px 12px; cursor: pointer; font-size: 0.8rem; margin-left: 8px; }
+        .pinned-badge { background: #28a745; color: white; border-radius: 12px; padding: 2px 8px; font-size: 0.7rem; display: inline-block; margin-left: 8px; }
+        .verified-wrapper { display: inline-flex; position: relative; cursor: pointer; }
+        .verified-tooltip { position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%) translateY(8px); background: rgba(0,0,0,0.85); color: white; font-size: 0.75rem; padding: 6px 10px; border-radius: 8px; white-space: nowrap; opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none; }
+        .verified-wrapper:hover .verified-tooltip { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .lang-toggle { background: #e4e6eb; border: none; border-radius: 20px; padding: 6px 12px; cursor: pointer; font-size: 0.9rem; margin-bottom: 15px; float: right; }
+    </style>
 </head>
 <body>
 <div class="container">
