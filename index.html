@@ -7,7 +7,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, deleteDoc, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCzqpQniq7LiwRZ_L_FKEsIXh6CfC76QHA",
@@ -43,7 +43,7 @@
                 .catch(err => alert("Ошибка входа: " + err.message));
         };
 
-        // Регистрация + создание профиля в коллекции users
+        // Регистрация + создание профиля в коллекции users (только если его нет)
         registerBtn.onclick = async () => {
             const email = registerEmail.value;
             const password = registerPassword.value;
@@ -52,16 +52,22 @@
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
                 const username = email.split('@')[0];
-                // Создаём документ пользователя в коллекции "users"
-                await setDoc(doc(db, "users", username), {
-                    email: user.email,
-                    displayName: username,
-                    verified: false,
-                    bio: "Новый пользователь Glists",
-                    createdAt: new Date(),
-                    uid: user.uid
-                });
-                alert("Регистрация успешна! Профиль создан.");
+                // Проверяем, существует ли уже документ пользователя
+                const userRef = doc(db, "users", username);
+                const userSnap = await getDoc(userRef);
+                if (!userSnap.exists()) {
+                    await setDoc(userRef, {
+                        email: user.email,
+                        displayName: username,
+                        verified: false,
+                        bio: "Новый пользователь Glists",
+                        createdAt: new Date(),
+                        uid: user.uid
+                    });
+                    alert("Регистрация успешна! Профиль создан.");
+                } else {
+                    alert("Регистрация успешна, профиль уже существовал.");
+                }
             } catch (err) {
                 alert("Ошибка регистрации: " + err.message);
             }

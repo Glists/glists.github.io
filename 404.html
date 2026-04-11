@@ -4,4 +4,19 @@
 <body>
 <script>window.location.href = '/profile.html' + window.location.pathname;</script>
 </body>
+</html><!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Glists</title></head>
+<body>
+<script>
+    var path = window.location.pathname;
+    var match = path.match(/^\/user\/([^\/]+)/);
+    if (match) {
+        var username = match[1];
+        window.location.href = '/profile.html?user=' + encodeURIComponent(username);
+    } else {
+        window.location.href = '/';
+    }
+</script>
+</body>
 </html>
