@@ -32,7 +32,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, deleteDoc, doc, setDoc, getDoc, getDocs, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, deleteDoc, doc, setDoc, getDocs, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCzqpQniq7LiwRZ_L_FKEsIXh6CfC76QHA",
@@ -63,66 +63,70 @@
     const feedList = document.getElementById('feedList');
     const currentUserSpan = document.getElementById('currentUser');
 
-    // Кэш: uid -> nickname (ID документа в users)
-    const nicknameCache = new Map();
+    // Кэш: uid -> { username, displayName, verified }
+    const userCache = new Map();
 
-    async function getNicknameByUid(uid) {
-        if (nicknameCache.has(uid)) return nicknameCache.get(uid);
+    async function getUserInfo(uid) {
+        if (userCache.has(uid)) return userCache.get(uid);
         try {
             const q = query(collection(db, 'users'), where('uid', '==', uid));
             const snap = await getDocs(q);
             if (!snap.empty) {
-                const docId = snap.docs[0].id;
-                nicknameCache.set(uid, docId);
-                return docId;
+                const docData = snap.docs[0].data();
+                const info = {
+                    username: snap.docs[0].id,
+                    displayName: docData.displayName || snap.docs[0].id,
+                    verified: docData.verified === true
+                };
+                userCache.set(uid, info);
+                return info;
             }
         } catch(e) { console.error(e); }
         return null;
     }
 
-    // Вход
     loginBtn.onclick = () => signInWithEmailAndPassword(auth, loginEmail.value, loginPass.value).catch(e => alert(e.message));
 
-    // Регистрация (создаёт документ users с ID = первая часть email, но можно потом поменять)
     regBtn.onclick = async () => {
         const email = regEmail.value, pass = regPass.value;
         if (!email || !pass) return alert("Заполни поля");
         try {
             const cred = await createUserWithEmailAndPassword(auth, email, pass);
             const username = email.split('@')[0];
+            const displayName = prompt("Введите ваше отображаемое имя (например, Нормик Чел):", username);
             await setDoc(doc(db, "users", username), {
                 email: email,
-                displayName: username,
+                displayName: displayName || username,
                 verified: false,
                 bio: "Новый пользователь Glists",
                 createdAt: new Date(),
                 uid: cred.user.uid
             });
-            alert("Готово! Теперь можешь войти.");
+            alert("Готово!");
         } catch(e) { alert(e.message); }
     };
 
     logoutBtn.onclick = () => signOut(auth);
 
-    // Добавление поста – сохраняем authorNick (через кэш или запрос)
     publishBtn.onclick = async () => {
         const text = postInput.value.trim();
         if (!text) return alert("Напиши пост");
         const user = auth.currentUser;
         if (!user) return alert("Войди");
-        let authorNick = await getNicknameByUid(user.uid);
-        if (!authorNick) authorNick = user.email.split('@')[0];
+        const info = await getUserInfo(user.uid);
+        const authorUsername = info ? info.username : user.email.split('@')[0];
+        const authorDisplayName = info ? info.displayName : authorUsername;
         await addDoc(collection(db, "posts"), {
             text,
             uid: user.uid,
             email: user.email,
-            authorNick: authorNick,
+            authorUsername: authorUsername,
+            authorDisplayName: authorDisplayName,
             createdAt: new Date()
         });
         postInput.value = "";
     };
 
-    // Лента
     function subscribeToFeed() {
         const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
         onSnapshot(q, async (snap) => {
@@ -134,27 +138,32 @@
                 const date = data.createdAt ? new Date(data.createdAt.toDate()).toLocaleString() : "";
                 const isOwner = currentUser && currentUser.uid === data.uid;
                 
-                // Получаем ник для ссылки
-                let displayNick = data.authorNick;
-                if (!displayNick) {
-                    displayNick = await getNicknameByUid(data.uid);
-                    if (!displayNick) displayNick = data.email.split('@')[0];
+                let displayName = data.authorDisplayName;
+                let authorUsername = data.authorUsername;
+                let verified = false;
+                
+                if (!displayName || !authorUsername) {
+                    const info = await getUserInfo(data.uid);
+                    if (info) {
+                        displayName = info.displayName;
+                        authorUsername = info.username;
+                        verified = info.verified;
+                    } else {
+                        displayName = data.email.split('@')[0];
+                        authorUsername = data.email.split('@')[0];
+                    }
+                } else {
+                    // проверяем верификацию по uid
+                    const info = await getUserInfo(data.uid);
+                    if (info) verified = info.verified;
                 }
                 
-                // Проверка верификации (по uid)
-                let verified = false;
-                try {
-                    const qq = query(collection(db, 'users'), where('uid', '==', data.uid));
-                    const snapUser = await getDocs(qq);
-                    if (!snapUser.empty) verified = snapUser.docs[0].data().verified === true;
-                } catch(e) {}
-
                 const div = document.createElement('div');
                 div.className = 'post';
                 div.innerHTML = `
                     <div class="post-header">
                         <div class="post-author">
-                            <a href="/profile.html?user=${escapeHtml(displayNick)}">${escapeHtml(displayNick)}</a>
+                            <a href="/profile.html?user=${escapeHtml(authorUsername)}">${escapeHtml(displayName)}</a>
                             ${verified ? `<span class="verified-icon">${verifiedSVG}</span>` : ''}
                         </div>
                         <span class="post-date">${date}</span>
