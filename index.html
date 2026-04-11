@@ -36,8 +36,10 @@
         button:hover { background: #0e5dc7; }
         .post { background: var(--post-bg); margin: 10px 0; padding: 10px; border-left: 4px solid #1877f2; border-radius: 8px; }
         .post-header { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.8rem; color: var(--text-secondary); }
-        .post-author { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+        .post-author { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .post-author a { color: var(--text-primary); text-decoration: none; font-weight: bold; }
+        .post-author a:hover { text-decoration: underline; }
+        .small-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #1877f2; display: inline-flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1rem; }
         .delete-btn { background: #dc3545; color: white; border: none; border-radius: 20px; padding: 4px 12px; cursor: pointer; }
         .verified-icon { display: inline-flex; margin-left: 4px; vertical-align: middle; }
         .like-btn { background: none; border: none; cursor: pointer; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 20px; color: var(--like-btn); }
@@ -124,7 +126,7 @@
     };
     themeToggle.innerText = document.body.classList.contains('dark') ? '☀️ Светлая' : '🌙 Тёмная';
 
-    // DOM
+    // DOM элементы
     const authDiv = document.getElementById('authContainer');
     const feedDiv = document.getElementById('feedContainer');
     const loginEmail = document.getElementById('loginEmail');
@@ -139,7 +141,7 @@
     const feedList = document.getElementById('feedList');
     const currentUserSpan = document.getElementById('currentUser');
 
-    // Кэш пользователей
+    // Кэш пользователей (uid -> данные)
     const userCache = new Map();
     async function getUserInfo(uid) {
         if (userCache.has(uid)) return userCache.get(uid);
@@ -151,7 +153,8 @@
                 const info = {
                     username: snap.docs[0].id,
                     displayName: docData.displayName || snap.docs[0].id,
-                    verified: docData.verified === true
+                    verified: docData.verified === true,
+                    avatarUrl: docData.avatarUrl || ''
                 };
                 userCache.set(uid, info);
                 return info;
@@ -160,6 +163,7 @@
         return null;
     }
 
+    // Лайк
     async function toggleLike(postId, userId) {
         const likeRef = doc(db, 'likes', `${postId}_${userId}`);
         const likeSnap = await getDoc(likeRef);
@@ -172,7 +176,10 @@
         }
     }
 
+    // Вход
     loginBtn.onclick = () => signInWithEmailAndPassword(auth, loginEmail.value, loginPass.value).catch(e => alert(e.message));
+    
+    // Регистрация
     regBtn.onclick = async () => {
         const email = regEmail.value, pass = regPass.value;
         if (!email || !pass) return alert("Заполни поля");
@@ -186,12 +193,16 @@
                 verified: false,
                 bio: "Новый пользователь Glists",
                 createdAt: new Date(),
-                uid: cred.user.uid
+                uid: cred.user.uid,
+                avatarUrl: ''
             });
             alert("Готово!");
         } catch(e) { alert(e.message); }
     };
+    
     logoutBtn.onclick = () => signOut(auth);
+    
+    // Публикация поста
     publishBtn.onclick = async () => {
         const text = postInput.value.trim();
         if (!text) return alert("Напиши пост");
@@ -200,14 +211,21 @@
         const info = await getUserInfo(user.uid);
         const authorUsername = info ? info.username : user.email.split('@')[0];
         const authorDisplayName = info ? info.displayName : authorUsername;
+        const authorAvatar = info ? info.avatarUrl : '';
         await addDoc(collection(db, "posts"), {
-            text, uid: user.uid, email: user.email,
-            authorUsername, authorDisplayName,
-            createdAt: new Date(), likesCount: 0
+            text,
+            uid: user.uid,
+            email: user.email,
+            authorUsername,
+            authorDisplayName,
+            authorAvatar,
+            createdAt: new Date(),
+            likesCount: 0
         });
         postInput.value = "";
     };
 
+    // Лента
     function subscribeToFeed() {
         const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
         onSnapshot(q, async (snap) => {
@@ -218,21 +236,28 @@
                 const postId = docSnap.id;
                 const date = data.createdAt ? new Date(data.createdAt.toDate()).toLocaleString() : "";
                 const isOwner = currentUser && currentUser.uid === data.uid;
+                
+                // Лайкнут ли текущий пользователь
                 let liked = false;
                 if (currentUser) {
                     const likeRef = doc(db, 'likes', `${postId}_${currentUser.uid}`);
                     const likeSnap = await getDoc(likeRef);
                     liked = likeSnap.exists();
                 }
+                
+                // Данные автора (из поста или из кэша)
                 let displayName = data.authorDisplayName;
                 let authorUsername = data.authorUsername;
+                let avatarUrl = data.authorAvatar;
                 let verified = false;
+                
                 if (!displayName || !authorUsername) {
                     const info = await getUserInfo(data.uid);
                     if (info) {
                         displayName = info.displayName;
                         authorUsername = info.username;
                         verified = info.verified;
+                        avatarUrl = info.avatarUrl;
                     } else {
                         displayName = data.email.split('@')[0];
                         authorUsername = data.email.split('@')[0];
@@ -241,11 +266,18 @@
                     const info = await getUserInfo(data.uid);
                     if (info) verified = info.verified;
                 }
+                
+                // HTML аватарки (картинка или инициал)
+                const avatarHtml = avatarUrl
+                    ? `<img src="${escapeHtml(avatarUrl)}" class="small-avatar" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">`
+                    : `<div class="small-avatar" style="width:32px;height:32px;border-radius:50%;background:#1877f2;display:inline-flex;align-items:center;justify-content:center;color:white;">${displayName.charAt(0).toUpperCase()}</div>`;
+                
                 const div = document.createElement('div');
                 div.className = 'post';
                 div.innerHTML = `
                     <div class="post-header">
                         <div class="post-author">
+                            ${avatarHtml}
                             <a href="/profile.html?user=${escapeHtml(authorUsername)}">${escapeHtml(displayName)}</a>
                             ${verified ? `<span class="verified-icon">${verifiedSVG}</span>` : ''}
                         </div>
@@ -258,6 +290,7 @@
                     </div>
                 `;
                 feedList.appendChild(div);
+                
                 const likeBtn = div.querySelector('.like-btn');
                 if (likeBtn && currentUser) likeBtn.onclick = () => toggleLike(postId, currentUser.uid);
                 if (isOwner) div.querySelector('.delete-btn').onclick = () => deleteDoc(doc(db, "posts", postId));
