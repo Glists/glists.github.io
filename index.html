@@ -4,87 +4,57 @@
     <meta charset="UTF-8">
     <title>Glists</title>
     <style>
-        /* все стили как в предыдущем работающем варианте — они у тебя есть, я их не менял */
         :root { --bg-body: #f0f2f5; --bg-container: white; --text-primary: #1e2a3e; --text-secondary: #555; --border-color: #ddd; --post-bg: #f8f9fa; --comment-bg: #f1f3f5; --like-btn: #1877f2; --like-btn-active: #e0245e; --dislike-btn: #6c757d; --dislike-btn-active: #dc3545; --poll-bg: #e9ecef; }
         body.dark { --bg-body: #1a1a2e; --bg-container: #16213e; --text-primary: #eee; --text-secondary: #aaa; --border-color: #2c3e50; --post-bg: #0f3460; --comment-bg: #1a2a4a; --like-btn: #4a9eff; --like-btn-active: #ff4d6d; --dislike-btn: #8c8f9e; --dislike-btn-active: #ff6b6b; --poll-bg: #0a1a2a; }
-        * { box-sizing: border-box; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
-        body { background: var(--bg-body); margin: 0; padding: 20px; transition: background 0.2s; }
-        .container { max-width: 600px; margin: auto; background: var(--bg-container); border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 20px; transition: background 0.2s; }
-        h1 { font-size: 1.8rem; margin: 0 0 10px 0; color: #1877f2; display: flex; justify-content: space-between; align-items: center; }
-        .top-bar { display: flex; gap: 10px; }
-        .theme-toggle, .lang-toggle, .search-toggle, .messages-link, .notifications-link { background: #e4e6eb; border: none; border-radius: 20px; padding: 6px 12px; cursor: pointer; font-size: 0.9rem; text-decoration: none; color: var(--text-primary); display: inline-block; }
-        input, button, textarea { padding: 8px; margin: 4px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-container); color: var(--text-primary); font-family: inherit; }
+        * { box-sizing: border-box; font-family: system-ui, sans-serif; }
+        body { background: var(--bg-body); margin: 0; padding: 20px; transition: 0.2s; color: var(--text-primary); }
+        .container { max-width: 600px; margin: auto; background: var(--bg-container); border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h1 { color: #1877f2; display: flex; justify-content: space-between; align-items: center; }
+        .top-bar { display: flex; gap: 8px; }
+        input, button, textarea { padding: 8px; margin: 4px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-container); color: var(--text-primary); }
         button { background: #1877f2; color: white; border: none; cursor: pointer; font-weight: bold; }
-        button:hover { background: #0e5dc7; }
-        .post { background: var(--post-bg); margin: 10px 0; padding: 10px; border-left: 4px solid #1877f2; border-radius: 8px; }
-        .repost-badge { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
-        .post-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 0.8rem; }
-        .post-author { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-        .post-author a { color: var(--text-primary); text-decoration: none; font-weight: bold; }
-        .small-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #1877f2; display: inline-flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1rem; }
-        .post-text { white-space: pre-wrap; word-break: break-word; margin: 8px 0; }
-        .post-text a { color: #1877f2; text-decoration: none; }
-        .post-image { max-width: 100%; border-radius: 12px; margin: 8px 0; }
-        .edit-post-btn, .delete-btn, .pin-btn, .block-btn { background: #6c757d; color: white; border: none; border-radius: 20px; padding: 2px 8px; font-size: 0.7rem; cursor: pointer; margin-left: 4px; }
-        .pin-btn.pinned { background: #28a745; }
-        .poll-container { background: var(--poll-bg); border-radius: 12px; padding: 8px; margin: 8px 0; }
-        .poll-option { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
-        .poll-option button { background: none; border: 1px solid var(--border-color); padding: 2px 8px; font-size: 0.8rem; }
-        .comments-section { margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--border-color); }
-        .comment { display: flex; gap: 8px; margin: 8px 0; background: var(--comment-bg); border-radius: 12px; padding: 6px 10px; align-items: flex-start; }
-        .comment-avatar { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; background: #1877f2; display: inline-flex; align-items: center; justify-content: center; color: white; font-size: 0.7rem; }
-        .comment-content { flex: 1; }
-        .comment-author { font-weight: bold; font-size: 0.8rem; }
-        .comment-text { font-size: 0.85rem; word-wrap: break-word; }
-        .comment-date { font-size: 0.7rem; color: var(--text-secondary); margin-left: 8px; }
-        .add-comment { display: flex; gap: 8px; margin-top: 8px; }
-        .add-comment input { flex: 1; margin: 0; padding: 6px; font-size: 0.8rem; }
-        .add-comment button { margin: 0; padding: 6px 12px; }
-        .delete-comment-btn { background: #dc3545; color: white; border: none; border-radius: 20px; padding: 2px 8px; cursor: pointer; font-size: 0.7rem; }
-        .like-btn, .dislike-btn, .repost-btn { background: none; border: none; cursor: pointer; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 20px; }
-        .like-btn { color: var(--like-btn); }
-        .like-btn.liked { color: var(--like-btn-active); font-weight: bold; }
-        .dislike-btn { color: var(--dislike-btn); }
-        .dislike-btn.disliked { color: var(--dislike-btn-active); font-weight: bold; }
-        .repost-btn { color: #28a745; }
-        .verified-icon { display: inline-flex; margin-left: 4px; vertical-align: middle; }
-        .search-box { margin-bottom: 15px; }
-        .search-box input { width: 100%; }
+        .post { background: var(--post-bg); margin: 15px 0; padding: 15px; border-radius: 12px; border-left: 4px solid #1877f2; }
+        .post-header { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 10px; }
+        .small-avatar { width: 35px; height: 35px; border-radius: 50%; background: #1877f2; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .post-image { max-width: 100%; border-radius: 8px; margin: 10px 0; }
+        .comment { background: var(--comment-bg); padding: 8px; border-radius: 8px; margin: 5px 0; font-size: 0.9rem; }
+        .poll-option { background: var(--poll-bg); padding: 5px; margin: 5px 0; border-radius: 5px; display: flex; justify-content: space-between; cursor: pointer; }
+        .repost-badge { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 5px; }
     </style>
 </head>
 <body>
 <div class="container">
     <h1>🐛 Glists
         <div class="top-bar">
-            <button class="theme-toggle" id="themeToggle">🌙 Тёмная</button>
-            <button class="lang-toggle" id="langToggle">🇷🇺 RU</button>
-            <button class="search-toggle" id="searchToggle">🔍</button>
-            <a href="/messages.html" class="messages-link">💬</a>
-            <a href="/notifications.html" class="notifications-link">🔔</a>
+            <button id="themeToggle">🌙</button>
+            <button id="langToggle">🇷🇺 RU</button>
         </div>
     </h1>
+
     <div id="authContainer">
-        <div><input id="loginEmail" placeholder="Почта"> <input id="loginPassword" type="password" placeholder="Пароль"> <button id="loginBtn">Вход</button></div>
-        <div><input id="registerEmail" placeholder="Новая почта"> <input id="registerPassword" type="password" placeholder="Пароль"> <button id="registerBtn">Регистрация</button></div>
+        <h3>Вход / Регистрация</h3>
+        <input id="authEmail" placeholder="Email">
+        <input id="authPass" type="password" placeholder="Пароль">
+        <button id="loginBtn">Вход</button>
+        <button id="regBtn">Регистрация</button>
     </div>
+
     <div id="feedContainer" style="display:none">
-        <div id="greeting"></div>
+        <div id="greetingBar" style="margin-bottom: 20px;"></div>
         <div id="postForm">
-            <textarea id="postInput" rows="2"></textarea>
-            <div><input type="file" id="postImageInput" accept="image/*"> <button id="addPollBtn">📊 Добавить опрос</button></div>
-            <button id="publishBtn">Опубликовать</button>
+            <textarea id="postInput" style="width:100%" placeholder="Чё как, братка?"></textarea>
+            <input type="file" id="postImageInput" accept="image/*">
+            <button id="publishBtn">Запостить</button>
         </div>
-        <div id="searchBox" class="search-box" style="display:none;">
-            <input type="text" id="searchInput" placeholder="Поиск...">
-        </div>
-        <hr><h3 id="feedTitle">Лента</h3><div id="feedList"></div>
+        <hr>
+        <div id="feedList"></div>
     </div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, deleteDoc, doc, setDoc, getDocs, where, updateDoc, increment, getDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc, increment, deleteDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCzqpQniq7LiwRZ_L_FKEsIXh6CfC76QHA",
@@ -94,534 +64,140 @@
         messagingSenderId: "557037045975",
         appId: "1:557037045975:web:dbcbd7ca0111a1494ac892"
     };
+
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
-
-    const verifiedSVG = `<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path fill="rgb(0, 149, 246)" d="M8.248 2.87a2.198 2.198 0 0 1 3.504 0c.48.633 1.264.958 2.05.85a2.198 2.198 0 0 1 2.478 2.477 2.2 2.2 0 0 0 .85 2.051 2.198 2.198 0 0 1 0 3.504 2.2 2.2 0 0 0-.85 2.05 2.198 2.198 0 0 1-2.477 2.478 2.2 2.2 0 0 0-2.051.85 2.198 2.198 0 0 1-3.504 0 2.2 2.2 0 0 0-2.05-.85 2.198 2.198 0 0 1-2.478-2.477 2.2 2.2 0 0 0-.85-2.051 2.198 2.198 0 0 1 0-3.504c.633-.48.958-1.264.85-2.05A2.198 2.198 0 0 1 6.197 3.72a2.2 2.2 0 0 0 2.051-.85"></path><path fill="#fff" fill-rule="evenodd" d="M13.765 7.205a.75.75 0 0 1 .03 1.06l-4.25 4.5a.75.75 0 0 1-1.047.042l-2.25-2.025A.75.75 0 0 1 7.25 9.667l1.706 1.536 3.748-3.968a.75.75 0 0 1 1.06-.03z" clip-rule="evenodd"></path></svg>`;
-
-    // --- Загрузка переводов ---
-    let translations = {};
-    let currentLang = 'ru';
-    
-    function getUrlParam(param) {
-        const urlParams = new URLSearchParams(window.location.search);
-        return urlParams.get(param);
-    }
-    
-    async function loadTranslations(lang) {
-        const response = await fetch(`/translations/${lang}.json`);
-        if (!response.ok) throw new Error(`Failed to load ${lang} translations`);
-        return await response.json();
-    }
-    
-    function applyTranslations() {
-        document.title = translations.site_title || "Glists";
-        // Статические элементы с data-i18n (если есть)
-        document.querySelectorAll('[data-i18n]').forEach(el => {
-            const key = el.getAttribute('data-i18n');
-            if (translations[key]) {
-                if (el.tagName === 'INPUT' && el.placeholder !== undefined) el.placeholder = translations[key];
-                else if (el.tagName === 'BUTTON' || el.tagName === 'A') el.innerText = translations[key];
-                else el.innerText = translations[key];
-            }
-        });
-        // Динамические элементы
-        const langToggle = document.getElementById('langToggle');
-        if (langToggle) langToggle.innerText = currentLang === 'ru' ? translations.lang_ru : translations.lang_en;
-        const themeToggle = document.getElementById('themeToggle');
-        if (themeToggle) themeToggle.innerText = document.body.classList.contains('dark') ? translations.theme_light : translations.theme_dark;
-        const greetingDiv = document.getElementById('greeting');
-        if (greetingDiv && auth.currentUser) {
-            greetingDiv.innerHTML = `${translations.greeting}, <span id="currentUser"></span> <button id="logoutBtn">${translations.logout}</button>`;
-        }
-        const feedTitle = document.getElementById('feedTitle');
-        if (feedTitle) feedTitle.innerText = translations.feed_title;
-        const postInput = document.getElementById('postInput');
-        if (postInput) postInput.placeholder = translations.post_placeholder;
-        const loginBtn = document.getElementById('loginBtn');
-        if (loginBtn) loginBtn.innerText = translations.login;
-        const registerBtn = document.getElementById('registerBtn');
-        if (registerBtn) registerBtn.innerText = translations.register;
-        const publishBtn = document.getElementById('publishBtn');
-        if (publishBtn) publishBtn.innerText = translations.publish;
-        const addPollBtn = document.getElementById('addPollBtn');
-        if (addPollBtn) addPollBtn.innerText = translations.add_poll;
-        const searchInput = document.getElementById('searchInput');
-        if (searchInput) searchInput.placeholder = translations.search_placeholder;
-    }
-    
-    // Инициализация языка
-    const urlLang = getUrlParam('hl');
-    if (urlLang && (urlLang === 'ru' || urlLang === 'en')) {
-        currentLang = urlLang;
-        localStorage.setItem('glists_lang', currentLang);
-    } else {
-        const savedLang = localStorage.getItem('glists_lang');
-        if (savedLang && (savedLang === 'ru' || savedLang === 'en')) currentLang = savedLang;
-    }
-    
-    try {
-        translations = await loadTranslations(currentLang);
-    } catch(e) { console.error(e); }
-    applyTranslations();
-    
-    // Переключение языка
-    document.getElementById('langToggle').onclick = () => {
-        const newLang = currentLang === 'ru' ? 'en' : 'ru';
-        const url = new URL(window.location.href);
-        url.searchParams.set('hl', newLang);
-        window.location.href = url.toString();
-    };
-    
-    // Тема
-    const themeToggle = document.getElementById('themeToggle');
-    if (localStorage.getItem('glists_theme') === 'dark') document.body.classList.add('dark');
-    themeToggle.onclick = () => {
-        document.body.classList.toggle('dark');
-        localStorage.setItem('glists_theme', document.body.classList.contains('dark') ? 'dark' : 'light');
-        themeToggle.innerText = document.body.classList.contains('dark') ? translations.theme_light : translations.theme_dark;
-    };
-    themeToggle.innerText = document.body.classList.contains('dark') ? translations.theme_light : translations.theme_dark;
-    
-    // --- DOM элементы ---
-    const authDiv = document.getElementById('authContainer');
-    const feedDiv = document.getElementById('feedContainer');
-    const loginEmail = document.getElementById('loginEmail');
-    const loginPass = document.getElementById('loginPassword');
-    const loginBtn = document.getElementById('loginBtn');
-    const regEmail = document.getElementById('registerEmail');
-    const regPass = document.getElementById('registerPassword');
-    const regBtn = document.getElementById('registerBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const postInput = document.getElementById('postInput');
-    const publishBtn = document.getElementById('publishBtn');
-    const feedList = document.getElementById('feedList');
-    const currentUserSpan = document.getElementById('currentUser');
-    const postImageInput = document.getElementById('postImageInput');
-    const addPollBtn = document.getElementById('addPollBtn');
-    const searchToggle = document.getElementById('searchToggle');
-    const searchBox = document.getElementById('searchBox');
-    const searchInput = document.getElementById('searchInput');
-    
-    let currentPoll = null;
     const CLOUD_NAME = "dbmiuq6s7";
     const UPLOAD_PRESET = "glists_preset";
-    
-    // --- Вспомогательные функции ---
-    const userCache = new Map();
-    async function getUserInfo(uid) {
-        if (userCache.has(uid)) return userCache.get(uid);
-        try {
-            const q = query(collection(db, 'users'), where('uid', '==', uid));
-            const snap = await getDocs(q);
-            if (!snap.empty) {
-                const docData = snap.docs[0].data();
-                const info = {
-                    username: snap.docs[0].id,
-                    displayName: docData.displayName || snap.docs[0].id,
-                    verified: docData.verified === true,
-                    avatarUrl: docData.avatarUrl || '',
-                    blockedBy: docData.blockedBy || []
-                };
-                userCache.set(uid, info);
-                return info;
-            }
-        } catch(e) { console.error(e); }
-        return null;
-    }
-    
-    async function toggleReaction(postId, userId, type) {
-        const likeRef = doc(db, 'likes', `${postId}_${userId}`);
-        const dislikeRef = doc(db, 'dislikes', `${postId}_${userId}`);
-        const likeSnap = await getDoc(likeRef);
-        const dislikeSnap = await getDoc(dislikeRef);
-        if (type === 'like') {
-            if (likeSnap.exists()) {
-                await deleteDoc(likeRef);
-                await updateDoc(doc(db, 'posts', postId), { likesCount: increment(-1) });
-            } else {
-                if (dislikeSnap.exists()) {
-                    await deleteDoc(dislikeRef);
-                    await updateDoc(doc(db, 'posts', postId), { dislikesCount: increment(-1) });
-                }
-                await setDoc(likeRef, { postId, userId, createdAt: new Date() });
-                await updateDoc(doc(db, 'posts', postId), { likesCount: increment(1) });
-                const postSnap = await getDoc(doc(db, 'posts', postId));
-                if (postSnap.exists() && postSnap.data().uid !== userId) {
-                    await sendNotification(postSnap.data().uid, 'like', userId, (await getUserInfo(userId)).displayName, postId);
-                }
-            }
-        } else if (type === 'dislike') {
-            if (dislikeSnap.exists()) {
-                await deleteDoc(dislikeRef);
-                await updateDoc(doc(db, 'posts', postId), { dislikesCount: increment(-1) });
-            } else {
-                if (likeSnap.exists()) {
-                    await deleteDoc(likeRef);
-                    await updateDoc(doc(db, 'posts', postId), { likesCount: increment(-1) });
-                }
-                await setDoc(dislikeRef, { postId, userId, createdAt: new Date() });
-                await updateDoc(doc(db, 'posts', postId), { dislikesCount: increment(1) });
-            }
-        }
-    }
-    
-    async function repost(originalPostId, originalAuthorUid, originalAuthorUsername, originalAuthorDisplayName, originalText, currentUser) {
-        const info = await getUserInfo(currentUser.uid);
-        const authorUsername = info.username;
-        const authorDisplayName = info.displayName;
-        const authorAvatar = info.avatarUrl;
-        await addDoc(collection(db, "posts"), {
-            type: 'repost',
-            originalPostId, originalAuthorUid, originalAuthorUsername, originalAuthorDisplayName,
-            originalText: originalText.substring(0, 100),
-            uid: currentUser.uid, email: currentUser.email,
-            authorUsername, authorDisplayName, authorAvatar,
-            createdAt: new Date(), likesCount: 0, dislikesCount: 0,
-            edited: false, hasPoll: false, pollId: null, imageUrl: null, pinned: false
-        });
-        await sendNotification(originalAuthorUid, 'repost', currentUser.uid, authorDisplayName, originalPostId);
-    }
-    
-    async function addComment(postId, text, user) {
-        if (!text.trim()) return;
-        const info = await getUserInfo(user.uid);
-        const authorDisplayName = info.displayName;
-        const authorUsername = info.username;
-        const authorAvatar = info.avatarUrl;
-        const commentRef = await addDoc(collection(db, 'comments'), {
-            postId, text: text.trim(), uid: user.uid,
-            authorDisplayName, authorUsername, authorAvatar,
-            createdAt: new Date()
-        });
-        const postSnap = await getDoc(doc(db, 'posts', postId));
-        if (postSnap.exists() && postSnap.data().uid !== user.uid) {
-            await sendNotification(postSnap.data().uid, 'comment', user.uid, authorDisplayName, postId, commentRef.id);
-        }
-    }
-    
-    async function deleteComment(commentId) {
-        await deleteDoc(doc(db, 'comments', commentId));
-    }
-    
-    async function sendNotification(toUid, type, fromUid, fromName, postId = null, commentId = null) {
-        if (toUid === fromUid) return;
-        await addDoc(collection(db, 'notifications'), {
-            uid: toUid, type, fromUid, fromName, postId, commentId, createdAt: new Date(), read: false
-        });
-    }
-    
-    async function editPost(postId, newText) {
-        await updateDoc(doc(db, 'posts', postId), { text: newText, edited: true, editedAt: new Date() });
-    }
-    
-    async function pinPost(username, postId, currentUid) {
-        const userRef = doc(db, 'users', username);
-        const userSnap = await getDoc(userRef);
-        if (userSnap.exists() && userSnap.data().uid === currentUid) {
-            await updateDoc(userRef, { pinnedPostId: postId });
-            await updateDoc(doc(db, 'posts', postId), { pinned: true });
-        }
-    }
-    
-    async function blockUser(blockedUsername, currentUid) {
-        const blockedUserRef = doc(db, 'users', blockedUsername);
-        const blockedSnap = await getDoc(blockedUserRef);
-        if (blockedSnap.exists()) {
-            await updateDoc(blockedUserRef, { blockedBy: arrayUnion(currentUid) });
-        }
-    }
-    
-    async function uploadImage(file) {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('upload_preset', UPLOAD_PRESET);
-        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: 'POST', body: formData });
-        const data = await res.json();
-        return data.secure_url;
-    }
-    
-    function parseTextWithLinks(text) {
-        let parsed = text.replace(/@(\w+)/g, '<a href="/profile.html?user=$1">@$1</a>');
-        parsed = parsed.replace(/#(\w+)/g, '<a href="#" class="hashtag-link" data-tag="$1">#$1</a>');
-        return parsed;
-    }
-    
-    async function votePoll(pollId, optionIndex, userId) {
-        const pollRef = doc(db, 'polls', pollId);
-        const voteId = `${pollId}_${userId}`;
-        const voteRef = doc(db, 'pollVotes', voteId);
-        const voteSnap = await getDoc(voteRef);
-        if (voteSnap.exists()) return;
-        await setDoc(voteRef, { pollId, userId, optionIndex, votedAt: new Date() });
-        await updateDoc(pollRef, {
-            [`votes.${optionIndex}`]: increment(1),
-            totalVotes: increment(1)
-        });
-    }
-    
-    function searchPosts(postsData, queryStr) {
-        const lowerQuery = queryStr.toLowerCase();
-        return postsData.filter(p => (p.text && p.text.toLowerCase().includes(lowerQuery)) || (p.authorDisplayName && p.authorDisplayName.toLowerCase().includes(lowerQuery)));
-    }
-    
-    let unsubscribeFeed = null;
-    function subscribeToFeed() {
-        if (unsubscribeFeed) unsubscribeFeed();
-        const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
-        unsubscribeFeed = onSnapshot(q, async (snap) => {
-            const postsData = [];
-            snap.forEach(docSnap => postsData.push({ id: docSnap.id, ...docSnap.data() }));
-            const currentUserObj = auth.currentUser;
-            let blockedByMe = [];
-            if (currentUserObj) {
-                const myUserRef = query(collection(db, 'users'), where('uid', '==', currentUserObj.uid));
-                const mySnap = await getDocs(myUserRef);
-                if (!mySnap.empty) blockedByMe = mySnap.docs[0].data().blockedBy || [];
-            }
-            const filteredPosts = postsData.filter(p => !blockedByMe.includes(p.uid));
-            let searchTerm = searchInput.value.trim();
-            let displayPosts = searchTerm ? searchPosts(filteredPosts, searchTerm) : filteredPosts;
-            feedList.innerHTML = "";
-            for (const data of displayPosts) {
-                const postId = data.id;
-                const date = data.createdAt ? new Date(data.createdAt.toDate()).toLocaleString() : "";
-                const isOwner = currentUserObj && currentUserObj.uid === data.uid;
-                let liked = false, disliked = false;
-                if (currentUserObj) {
-                    const likeRef = doc(db, 'likes', `${postId}_${currentUserObj.uid}`);
-                    const dislikeRef = doc(db, 'dislikes', `${postId}_${currentUserObj.uid}`);
-                    liked = (await getDoc(likeRef)).exists();
-                    disliked = (await getDoc(dislikeRef)).exists();
-                }
-                let displayName = data.authorDisplayName;
-                let authorUsername = data.authorUsername;
-                let avatarUrl = data.authorAvatar;
-                let verified = false;
-                if (!displayName || !authorUsername) {
-                    const info = await getUserInfo(data.uid);
-                    if (info) { displayName = info.displayName; authorUsername = info.username; verified = info.verified; avatarUrl = info.avatarUrl; }
-                    else { displayName = data.email.split('@')[0]; authorUsername = data.email.split('@')[0]; }
-                } else { const info = await getUserInfo(data.uid); if (info) verified = info.verified; }
-                const avatarHtml = avatarUrl ? `<img src="${escapeHtml(avatarUrl)}" class="small-avatar">` : `<div class="small-avatar">${displayName.charAt(0).toUpperCase()}</div>`;
-                let repostHtml = '';
-                if (data.type === 'repost') {
-                    repostHtml = `<div class="repost-badge">🔁 ${translations.reposted_prefix} <a href="/profile.html?user=${escapeHtml(data.originalAuthorUsername)}">${escapeHtml(data.originalAuthorDisplayName)}</a></div>
-                    <div class="original-post-link"><a href="/profile.html?user=${escapeHtml(data.originalAuthorUsername)}">@${escapeHtml(data.originalAuthorUsername)}</a>: ${escapeHtml(data.originalText)}</div>`;
-                }
-                let imageHtml = data.imageUrl ? `<img src="${escapeHtml(data.imageUrl)}" class="post-image">` : '';
-                let pollHtml = '';
-                if (data.hasPoll && data.pollId) {
-                    const pollRef = doc(db, 'polls', data.pollId);
-                    const pollSnap = await getDoc(pollRef);
-                    if (pollSnap.exists()) {
-                        const poll = pollSnap.data();
-                        const total = poll.totalVotes || 0;
-                        const userVoteRef = doc(db, 'pollVotes', `${data.pollId}_${currentUserObj?.uid}`);
-                        const userVoteSnap = currentUserObj ? await getDoc(userVoteRef) : null;
-                        pollHtml = `<div class="poll-container"><strong>${escapeHtml(poll.question)}</strong>`;
-                        poll.options.forEach((opt, idx) => {
-                            const votes = poll.votes[idx] || 0;
-                            const percent = total ? Math.round((votes/total)*100) : 0;
-                            pollHtml += `<div class="poll-option">
-                                <button ${userVoteSnap?.exists() ? 'disabled' : ''} class="vote-option" data-pollid="${data.pollId}" data-option="${idx}">${escapeHtml(opt)}</button>
-                                <span>${votes} (${percent}%)</span>
-                            </div>`;
-                        });
-                        pollHtml += `</div>`;
-                    }
-                }
-                const postDiv = document.createElement('div');
-                postDiv.className = 'post';
-                postDiv.innerHTML = `
-                    ${repostHtml}
-                    <div class="post-header">
-                        <div class="post-author">
-                            ${avatarHtml}
-                            <a href="/profile.html?user=${escapeHtml(authorUsername)}">${escapeHtml(displayName)}</a>
-                            ${verified ? `<span class="verified-icon">${verifiedSVG}</span>` : ''}
-                        </div>
-                        <div>
-                            <span class="post-date">${date}</span>
-                            ${isOwner ? `<button class="edit-post-btn" data-id="${postId}">✏️</button>` : ''}
-                            ${isOwner ? `<button class="pin-btn ${data.pinned ? 'pinned' : ''}" data-id="${postId}">📌</button>` : ''}
-                            ${currentUserObj && !isOwner ? `<button class="block-btn" data-username="${escapeHtml(authorUsername)}">🚫</button>` : ''}
-                        </div>
-                    </div>
-                    ${data.type !== 'repost' ? `<div class="post-text">${parseTextWithLinks(escapeHtml(data.text))}</div>` : ''}
-                    ${imageHtml}
-                    ${pollHtml}
-                    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                        <button class="like-btn ${liked ? 'liked' : ''}" data-postid="${postId}">❤️ ${data.likesCount || 0}</button>
-                        <button class="dislike-btn ${disliked ? 'disliked' : ''}" data-postid="${postId}">👎 ${data.dislikesCount || 0}</button>
-                        ${currentUserObj ? `<button class="repost-btn" data-postid="${postId}" data-uid="${data.uid}" data-username="${escapeHtml(authorUsername)}" data-displayname="${escapeHtml(displayName)}" data-text="${escapeHtml(data.text || '')}">🔁 ${translations.repost}</button>` : ''}
-                        ${isOwner ? `<button class="delete-btn" data-id="${postId}">${translations.delete}</button>` : ''}
-                    </div>
-                    <div class="comments-section" id="comments-${postId}">
-                        <div class="comments-list"></div>
-                        <div class="add-comment">
-                            <input type="text" placeholder="${translations.comment_placeholder}" class="comment-input">
-                            <button class="add-comment-btn">${translations.add_comment}</button>
-                        </div>
-                    </div>
-                `;
-                feedList.appendChild(postDiv);
-                // Обработчики событий
-                postDiv.querySelector('.like-btn')?.addEventListener('click', () => toggleReaction(postId, currentUserObj?.uid, 'like'));
-                postDiv.querySelector('.dislike-btn')?.addEventListener('click', () => toggleReaction(postId, currentUserObj?.uid, 'dislike'));
-                if (currentUserObj) {
-                    postDiv.querySelector('.repost-btn')?.addEventListener('click', () => repost(postId, data.uid, authorUsername, displayName, data.text || '', currentUserObj));
-                }
-                if (isOwner) {
-                    postDiv.querySelector('.edit-post-btn')?.addEventListener('click', async () => {
-                        const newText = prompt(translations.edit, data.text);
-                        if (newText) await editPost(postId, newText);
-                    });
-                    postDiv.querySelector('.pin-btn')?.addEventListener('click', async () => {
-                        await pinPost(authorUsername, postId, currentUserObj.uid);
-                    });
-                    postDiv.querySelector('.delete-btn')?.addEventListener('click', () => deleteDoc(doc(db, "posts", postId)));
-                }
-                postDiv.querySelectorAll('.block-btn').forEach(btn => {
-                    btn.addEventListener('click', async () => {
-                        const username = btn.dataset.username;
-                        if (confirm(translations.block_user_confirm?.replace('{username}', username))) await blockUser(username, currentUserObj.uid);
-                    });
-                });
-                postDiv.querySelectorAll('.vote-option').forEach(btn => {
-                    btn.addEventListener('click', () => votePoll(btn.dataset.pollid, parseInt(btn.dataset.option), currentUserObj.uid));
-                });
-                // Комментарии
-                const commentsQuery = query(collection(db, 'comments'), where('postId', '==', postId), orderBy('createdAt', 'asc'));
-                onSnapshot(commentsQuery, (commentsSnap) => {
-                    const commentsListDiv = postDiv.querySelector('.comments-list');
-                    if (!commentsListDiv) return;
-                    commentsListDiv.innerHTML = '';
-                    commentsSnap.forEach(commentDoc => {
-                        const c = commentDoc.data();
-                        const commentId = commentDoc.id;
-                        const cDate = c.createdAt ? new Date(c.createdAt.toDate()).toLocaleString() : '';
-                        const isCommentOwner = currentUserObj && currentUserObj.uid === c.uid;
-                        const commentAvatarHtml = c.authorAvatar ? `<img src="${escapeHtml(c.authorAvatar)}" class="comment-avatar">` : `<div class="comment-avatar">${c.authorDisplayName?.charAt(0).toUpperCase() || '?'}</div>`;
-                        const commentDiv = document.createElement('div');
-                        commentDiv.className = 'comment';
-                        commentDiv.innerHTML = `
-                            ${commentAvatarHtml}
-                            <div class="comment-content">
-                                <div><span class="comment-author">${escapeHtml(c.authorDisplayName)}</span> <span class="comment-date">${cDate}</span></div>
-                                <div class="comment-text">${parseTextWithLinks(escapeHtml(c.text))}</div>
-                            </div>
-                            ${isCommentOwner ? `<button class="delete-comment-btn" data-commentid="${commentId}">🗑</button>` : ''}
-                        `;
-                        commentsListDiv.appendChild(commentDiv);
-                        if (isCommentOwner) commentDiv.querySelector('.delete-comment-btn').onclick = () => deleteComment(commentId);
-                    });
-                });
-                const addCommentBtn = postDiv.querySelector('.add-comment-btn');
-                const commentInput = postDiv.querySelector('.comment-input');
-                addCommentBtn.onclick = async () => {
-                    if (!currentUserObj) { alert(translations.login_first); return; }
-                    await addComment(postId, commentInput.value, currentUserObj);
-                    commentInput.value = '';
-                };
-            }
-        });
-    }
-    
-    function escapeHtml(s) { return s ? s.replace(/[&<>]/g, m => m == '&' ? '&amp;' : m == '<' ? '&lt;' : '&gt;') : ''; }
-    
-    // --- Обработчики входа и регистрации ---
-    loginBtn.onclick = () => {
-        signInWithEmailAndPassword(auth, loginEmail.value, loginPass.value)
-            .catch(e => alert(e.message));
-    };
-    
-    regBtn.onclick = async () => {
-        const email = regEmail.value, pass = regPass.value;
-        if (!email || !pass) return alert("Заполни поля");
-        try {
-            const cred = await createUserWithEmailAndPassword(auth, email, pass);
-            const username = email.split('@')[0];
-            const displayName = prompt(translations.enter_display_name || "Введите ваше отображаемое имя:", username);
-            await setDoc(doc(db, "users", username), {
-                email, displayName: displayName || username, verified: false,
-                bio: "Новый пользователь Glists", createdAt: new Date(), uid: cred.user.uid, avatarUrl: '',
-                blockedBy: [], pinnedPostId: null
-            });
-            alert(translations.registration_success || "Готово!");
-        } catch(e) { alert(e.message); }
-    };
-    
-    logoutBtn.onclick = () => signOut(auth);
-    
-    publishBtn.onclick = async () => {
-        const text = postInput.value.trim();
-        const imageFile = postImageInput.files[0];
-        let imageUrl = null;
-        if (imageFile) imageUrl = await uploadImage(imageFile);
-        const user = auth.currentUser;
-        if (!user) return alert(translations.login_first);
-        const info = await getUserInfo(user.uid);
-        const authorUsername = info.username;
-        const authorDisplayName = info.displayName;
-        const authorAvatar = info.avatarUrl;
-        let pollId = null;
-        if (currentPoll) {
-            const pollRef = await addDoc(collection(db, 'polls'), {
-                question: currentPoll.question,
-                options: currentPoll.options,
-                votes: {},
-                totalVotes: 0,
-                authorUid: user.uid,
-                createdAt: new Date()
-            });
-            pollId = pollRef.id;
-            currentPoll = null;
-        }
-        await addDoc(collection(db, "posts"), {
-            type: 'post', text, uid: user.uid, email: user.email,
-            authorUsername, authorDisplayName, authorAvatar,
-            createdAt: new Date(), likesCount: 0, dislikesCount: 0,
-            edited: false, hasPoll: !!pollId, pollId, imageUrl, pinned: false
-        });
-        postInput.value = "";
-        postImageInput.value = "";
-    };
-    
-    addPollBtn.onclick = () => {
-        const question = prompt(translations.poll_question);
-        if (!question) return;
-        const options = [];
-        let opt;
-        for (let i=0; i<5; i++) {
-            opt = prompt(`${translations.poll_option} ${i+1} (${translations.poll_leave_empty || 'оставьте пустым для завершения'}):`);
-            if (!opt) break;
-            options.push(opt);
-        }
-        if (options.length < 2) return alert(translations.poll_need_two_options);
-        currentPoll = { question, options };
-        alert(translations.poll_added);
-    };
-    
-    searchToggle.onclick = () => { searchBox.style.display = searchBox.style.display === 'none' ? 'block' : 'none'; };
-    searchInput.oninput = () => { if (unsubscribeFeed) subscribeToFeed(); };
-    
-    onAuthStateChanged(auth, user => {
+
+    // --- ВСПОМОГАТЕЛЬНОЕ ---
+    const escape = (s) => s?.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+
+    // --- AUTH ---
+    document.getElementById('loginBtn').onclick = () => signInWithEmailAndPassword(auth, authEmail.value, authPass.value).catch(e => alert(e.message));
+    document.getElementById('regBtn').onclick = () => createUserWithEmailAndPassword(auth, authEmail.value, authPass.value).catch(e => alert(e.message));
+
+    onAuthStateChanged(auth, (user) => {
         if (user) {
-            authDiv.style.display = 'none';
-            feedDiv.style.display = 'block';
-            currentUserSpan.innerText = user.email;
-            const greetingDiv = document.getElementById('greeting');
-            if (greetingDiv) greetingDiv.innerHTML = `${translations.greeting}, <span id="currentUser"></span> <button id="logoutBtn">${translations.logout}</button>`;
-            subscribeToFeed();
+            authContainer.style.display = 'none';
+            feedContainer.style.display = 'block';
+            greetingBar.innerHTML = `Здарова, <b>${user.email}</b> <button onclick="window.logout()">Выход</button>`;
+            loadFeed();
         } else {
-            authDiv.style.display = 'flex';
-            feedDiv.style.display = 'none';
-            if (unsubscribeFeed) unsubscribeFeed();
-            feedList.innerHTML = "";
+            authContainer.style.display = 'block';
+            feedContainer.style.display = 'none';
         }
     });
+    window.logout = () => signOut(auth);
+
+    // --- РЕАКЦИИ И ДЕЙСТВИЯ ---
+    window.doLike = async (id) => {
+        const ref = doc(db, "posts", id);
+        await updateDoc(ref, { likesCount: increment(1) });
+    };
+
+    window.doRepost = async (id, text, author) => {
+        await addDoc(collection(db, "posts"), {
+            text: `[Репост от ${author}]: ${text}`,
+            uid: auth.currentUser.uid,
+            email: auth.currentUser.email,
+            createdAt: new Date(),
+            likesCount: 0,
+            isRepost: true
+        });
+    };
+
+    window.addComment = async (id) => {
+        const val = document.getElementById(`cmnt-in-${id}`).value;
+        if(!val) return;
+        await addDoc(collection(db, "comments"), {
+            postId: id,
+            text: val,
+            author: auth.currentUser.email,
+            createdAt: new Date()
+        });
+        document.getElementById(`cmnt-in-${id}`).value = '';
+    };
+
+    // --- КАРТИНКИ ---
+    async function uploadImg(file) {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('upload_preset', UPLOAD_PRESET);
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: 'POST', body: fd });
+        const d = await res.json();
+        return d.secure_url;
+    }
+
+    // --- ПОСТИНГ ---
+    publishBtn.onclick = async () => {
+        let url = null;
+        if(postImageInput.files[0]) url = await uploadImg(postImageInput.files[0]);
+        await addDoc(collection(db, "posts"), {
+            text: postInput.value,
+            uid: auth.currentUser.uid,
+            email: auth.currentUser.email,
+            createdAt: new Date(),
+            likesCount: 0,
+            imageUrl: url
+        });
+        postInput.value = '';
+    };
+
+    // --- ЛЕНТА ---
+    function loadFeed() {
+        const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+        onSnapshot(q, (snap) => {
+            feedList.innerHTML = '';
+            snap.forEach(d => {
+                const p = d.data();
+                const id = d.id;
+                const div = document.createElement('div');
+                div.className = 'post';
+                div.innerHTML = `
+                    <div class="post-header">
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <div class="small-avatar">${p.email[0].toUpperCase()}</div>
+                            <b>${escape(p.email)}</b>
+                        </div>
+                        <span>${p.createdAt?.toDate().toLocaleString() || ''}</span>
+                    </div>
+                    <div class="post-text">${escape(p.text)}</div>
+                    ${p.imageUrl ? `<img src="${p.imageUrl}" class="post-image">` : ''}
+                    <div style="margin-top:10px;">
+                        <button onclick="doLike('${id}')">❤️ ${p.likesCount || 0}</button>
+                        <button onclick="doRepost('${id}', '${escape(p.text)}', '${escape(p.email)}')">🔁 Репост</button>
+                        ${auth.currentUser.uid === p.uid ? `<button style="background:#dc3545" onclick="deleteDoc(doc(db,'posts','${id}'))">🗑️</button>` : ''}
+                    </div>
+                    <div id="cmnts-${id}" style="margin-top:10px; border-top:1px solid #eee; padding-top:10px;"></div>
+                    <div style="display:flex; margin-top:5px;">
+                        <input id="cmnt-in-${id}" style="flex:1" placeholder="Коммент...">
+                        <button onclick="addComment('${id}')">📡</button>
+                    </div>
+                `;
+                feedList.appendChild(div);
+                
+                // Грузим комменты для поста
+                const cq = query(collection(db, "comments"), where("postId", "==", id), orderBy("createdAt", "asc"));
+                onSnapshot(cq, (csnap) => {
+                    const clist = document.getElementById(`cmnts-${id}`);
+                    if(!clist) return;
+                    clist.innerHTML = '';
+                    csnap.forEach(cd => {
+                        const c = cd.data();
+                        clist.innerHTML += `<div class="comment"><b>${c.author.split('@')[0]}:</b> ${escape(c.text)}</div>`;
+                    });
+                });
+            });
+        });
+    }
+
+    // Тема
+    themeToggle.onclick = () => {
+        document.body.classList.toggle('dark');
+        themeToggle.innerText = document.body.classList.contains('dark') ? '☀️' : '🌙';
+    };
 </script>
 </body>
 </html>
