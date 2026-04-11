@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Личные сообщения — Glists</title>
+    <title>Glists - Messages</title>
     <style>
         :root { --bg-body: #f0f2f5; --bg-container: white; --text-primary: #1e2a3e; --border-color: #ddd; --message-bg: #e9ecef; --own-message-bg: #1877f2; }
         body.dark { --bg-body: #1a1a2e; --bg-container: #16213e; --text-primary: #eee; --border-color: #2c3e50; --message-bg: #0f3460; --own-message-bg: #0a58ca; }
@@ -15,18 +15,22 @@
         .input-area { display: flex; gap: 8px; }
         .input-area input { flex: 1; padding: 8px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--bg-container); color: var(--text-primary); }
         .back-link { display: inline-block; margin-top: 20px; color: #1877f2; text-decoration: none; }
+        .lang-toggle { background: #e4e6eb; border: none; border-radius: 20px; padding: 6px 12px; cursor: pointer; font-size: 0.9rem; margin-bottom: 15px; }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>💬 Личные сообщения</h1>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h1 id="pageTitle">💬 Личные сообщения</h1>
+        <button class="lang-toggle" id="langToggle">🇷🇺 RU</button>
+    </div>
     <div id="chatHeader"></div>
     <div id="messagesList" class="messages-list">Загрузка...</div>
     <div class="input-area" id="inputArea" style="display:none;">
         <input type="text" id="messageInput" placeholder="Сообщение...">
         <button id="sendBtn">Отправить</button>
     </div>
-    <a href="/" class="back-link">← На главную</a>
+    <a href="/" class="back-link" id="backLink">← На главную</a>
 </div>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -45,30 +49,81 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
+    // --- Переводы ---
+    let translations = {};
+    let currentLang = 'ru';
+    
+    function getUrlParam(param) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(param);
+    }
+    
+    async function loadTranslations(lang) {
+        const response = await fetch(`/translations/${lang}.json`);
+        if (!response.ok) throw new Error(`Failed to load ${lang} translations`);
+        return await response.json();
+    }
+    
+    function applyTranslations() {
+        document.title = translations.site_title || "Glists";
+        const pageTitle = document.getElementById('pageTitle');
+        if (pageTitle) pageTitle.innerText = translations.messages_title || "Личные сообщения";
+        const backLink = document.getElementById('backLink');
+        if (backLink) backLink.innerText = translations.back_home || "← На главную";
+        const langToggle = document.getElementById('langToggle');
+        if (langToggle) langToggle.innerText = currentLang === 'ru' ? translations.lang_ru : translations.lang_en;
+        const sendBtn = document.getElementById('sendBtn');
+        if (sendBtn) sendBtn.innerText = translations.send || "Отправить";
+        const messageInput = document.getElementById('messageInput');
+        if (messageInput) messageInput.placeholder = translations.type_message || "Сообщение...";
+    }
+    
+    const urlLang = getUrlParam('hl');
+    if (urlLang && (urlLang === 'ru' || urlLang === 'en')) {
+        currentLang = urlLang;
+        localStorage.setItem('glists_lang', currentLang);
+    } else {
+        const savedLang = localStorage.getItem('glists_lang');
+        if (savedLang && (savedLang === 'ru' || savedLang === 'en')) currentLang = savedLang;
+    }
+    
+    try {
+        translations = await loadTranslations(currentLang);
+    } catch(e) { console.error(e); }
+    applyTranslations();
+    
+    document.getElementById('langToggle').onclick = () => {
+        const newLang = currentLang === 'ru' ? 'en' : 'ru';
+        const url = new URL(window.location.href);
+        url.searchParams.set('hl', newLang);
+        window.location.href = url.toString();
+    };
+    
+    if (localStorage.getItem('glists_theme') === 'dark') document.body.classList.add('dark');
+    
     const params = new URLSearchParams(location.search);
     const otherUsername = params.get('user');
     let currentUser = null;
     let otherUid = null;
-
+    
     onAuthStateChanged(auth, async (user) => {
         if (!user) { window.location.href = '/'; return; }
         currentUser = user;
         if (!otherUsername) {
-            document.getElementById('messagesList').innerHTML = '<p>Не указан получатель</p>';
+            document.getElementById('messagesList').innerHTML = `<p>${translations.no_recipient || "Не указан получатель"}</p>`;
             document.getElementById('inputArea').style.display = 'none';
             return;
         }
-        // получить uid получателя
         const usersRef = collection(db, 'users');
         const q = query(usersRef, where('uid', '==', currentUser.uid));
         const mySnap = await getDocs(q);
         if (mySnap.empty) return;
         const myUsername = mySnap.docs[0].id;
-        document.getElementById('chatHeader').innerHTML = `<h3>Чат с @${escapeHtml(otherUsername)}</h3>`;
+        document.getElementById('chatHeader').innerHTML = `<h3>${translations.chat_with || "Чат с"} @${escapeHtml(otherUsername)}</h3>`;
         const otherQuery = query(usersRef, where('displayName', '==', otherUsername));
         const otherSnap = await getDocs(otherQuery);
         if (otherSnap.empty) {
-            document.getElementById('messagesList').innerHTML = '<p>Пользователь не найден</p>';
+            document.getElementById('messagesList').innerHTML = `<p>${translations.user_not_found || "Пользователь не найден"}</p>`;
             return;
         }
         otherUid = otherSnap.docs[0].data().uid;
@@ -90,7 +145,7 @@
         });
         document.getElementById('inputArea').style.display = 'flex';
     });
-
+    
     document.getElementById('sendBtn')?.addEventListener('click', async () => {
         const text = document.getElementById('messageInput').value.trim();
         if (!text || !currentUser || !otherUid) return;
@@ -103,9 +158,8 @@
         });
         document.getElementById('messageInput').value = '';
     });
-
+    
     function escapeHtml(s) { return s ? s.replace(/[&<>]/g, m => m == '&' ? '&amp;' : m == '<' ? '&lt;' : '&gt;') : ''; }
-    if (localStorage.getItem('glists_theme') === 'dark') document.body.classList.add('dark');
 </script>
 </body>
 </html>

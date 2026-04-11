@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Редактировать профиль — Glists</title>
+    <title>Glists - Edit Profile</title>
     <style>
         body { background: #f0f2f5; font-family: system-ui; padding: 20px; }
         .container { max-width: 600px; margin: auto; background: white; border-radius: 16px; padding: 20px; }
@@ -10,18 +10,22 @@
         input, textarea, button { width: 100%; margin: 8px 0; padding: 10px; border-radius: 8px; border: 1px solid #ddd; }
         button { background: #1877f2; color: white; border: none; cursor: pointer; }
         .error { color: red; }
+        .lang-toggle { background: #e4e6eb; border: none; border-radius: 20px; padding: 6px 12px; cursor: pointer; font-size: 0.9rem; margin-bottom: 15px; float: right; }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>Редактирование профиля</h1>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h1 id="pageTitle">Редактирование профиля</h1>
+        <button class="lang-toggle" id="langToggle">🇷🇺 RU</button>
+    </div>
     <div id="status"></div>
     <img id="avatarPreview" class="avatar-preview" src="">
     <input type="file" id="avatarInput" accept="image/jpeg,image/png,image/gif">
     <input type="text" id="displayNameInput" placeholder="Отображаемое имя">
     <textarea id="bioInput" placeholder="О себе" rows="3"></textarea>
     <button id="saveBtn">Сохранить</button>
-    <a href="/profile.html?user=normikchel">Назад</a>
+    <a href="/profile.html" id="backLink">Назад</a>
 </div>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -40,34 +44,89 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // Cloudinary настройки (заполни своими)
+    // --- Переводы ---
+    let translations = {};
+    let currentLang = 'ru';
+    
+    function getUrlParam(param) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(param);
+    }
+    
+    async function loadTranslations(lang) {
+        const response = await fetch(`/translations/${lang}.json`);
+        if (!response.ok) throw new Error(`Failed to load ${lang} translations`);
+        return await response.json();
+    }
+    
+    function applyTranslations() {
+        document.title = translations.site_title || "Glists";
+        const pageTitle = document.getElementById('pageTitle');
+        if (pageTitle) pageTitle.innerText = translations.edit_profile_title || "Редактирование профиля";
+        const backLink = document.getElementById('backLink');
+        if (backLink) backLink.innerText = translations.back || "Назад";
+        const saveBtn = document.getElementById('saveBtn');
+        if (saveBtn) saveBtn.innerText = translations.save || "Сохранить";
+        const displayNameInput = document.getElementById('displayNameInput');
+        if (displayNameInput) displayNameInput.placeholder = translations.display_name_placeholder || "Отображаемое имя";
+        const bioInput = document.getElementById('bioInput');
+        if (bioInput) bioInput.placeholder = translations.bio_placeholder || "О себе";
+        const avatarInput = document.getElementById('avatarInput');
+        if (avatarInput) avatarInput.setAttribute('accept', translations.image_accept || "image/jpeg,image/png,image/gif");
+        const langToggle = document.getElementById('langToggle');
+        if (langToggle) langToggle.innerText = currentLang === 'ru' ? translations.lang_ru : translations.lang_en;
+    }
+    
+    const urlLang = getUrlParam('hl');
+    if (urlLang && (urlLang === 'ru' || urlLang === 'en')) {
+        currentLang = urlLang;
+        localStorage.setItem('glists_lang', currentLang);
+    } else {
+        const savedLang = localStorage.getItem('glists_lang');
+        if (savedLang && (savedLang === 'ru' || savedLang === 'en')) currentLang = savedLang;
+    }
+    
+    try {
+        translations = await loadTranslations(currentLang);
+    } catch(e) { console.error(e); }
+    applyTranslations();
+    
+    document.getElementById('langToggle').onclick = () => {
+        const newLang = currentLang === 'ru' ? 'en' : 'ru';
+        const url = new URL(window.location.href);
+        url.searchParams.set('hl', newLang);
+        window.location.href = url.toString();
+    };
+    
+    if (localStorage.getItem('glists_theme') === 'dark') document.body.classList.add('dark');
+    
     const CLOUD_NAME = "dbmiuq6s7";
     const UPLOAD_PRESET = "glists_preset";
-
+    
     const avatarInput = document.getElementById('avatarInput');
     const avatarPreview = document.getElementById('avatarPreview');
     const displayNameInput = document.getElementById('displayNameInput');
     const bioInput = document.getElementById('bioInput');
     const saveBtn = document.getElementById('saveBtn');
     const statusDiv = document.getElementById('status');
-
+    
     let currentUser = null;
     let currentUsername = null;
     let uploadedAvatarUrl = null;
-
+    
     onAuthStateChanged(auth, async (user) => {
         if (!user) { window.location.href = '/'; return; }
         currentUser = user;
         const q = query(collection(db, 'users'), where('uid', '==', user.uid));
         const snap = await getDocs(q);
-        if (snap.empty) { statusDiv.innerText = 'Профиль не найден'; return; }
+        if (snap.empty) { statusDiv.innerText = translations.profile_not_found || 'Профиль не найден'; return; }
         currentUsername = snap.docs[0].id;
         const data = snap.docs[0].data();
         displayNameInput.value = data.displayName || '';
         bioInput.value = data.bio || '';
         if (data.avatarUrl) avatarPreview.src = data.avatarUrl;
     });
-
+    
     avatarInput.onchange = () => {
         const file = avatarInput.files[0];
         if (!file) return;
@@ -82,13 +141,13 @@
         .then(data => {
             uploadedAvatarUrl = data.secure_url;
             avatarPreview.src = uploadedAvatarUrl;
-            statusDiv.innerText = 'Аватарка загружена';
+            statusDiv.innerText = translations.avatar_uploaded || 'Аватарка загружена';
         })
-        .catch(err => { statusDiv.innerText = 'Ошибка загрузки: ' + err.message; });
+        .catch(err => { statusDiv.innerText = (translations.upload_error || 'Ошибка загрузки: ') + err.message; });
     };
-
+    
     saveBtn.onclick = async () => {
-        statusDiv.innerText = 'Сохранение...';
+        statusDiv.innerText = translations.saving || 'Сохранение...';
         try {
             const userDocRef = doc(db, 'users', currentUsername);
             const updateData = {
@@ -97,10 +156,10 @@
             };
             if (uploadedAvatarUrl) updateData.avatarUrl = uploadedAvatarUrl;
             await updateDoc(userDocRef, updateData);
-            statusDiv.innerText = 'Сохранено!';
-            setTimeout(() => { window.location.href = `/profile.html?user=${currentUsername}`; }, 1000);
+            statusDiv.innerText = translations.saved || 'Сохранено!';
+            setTimeout(() => { window.location.href = `/profile.html?user=${currentUsername}&hl=${currentLang}`; }, 1000);
         } catch (err) {
-            statusDiv.innerText = 'Ошибка: ' + err.message;
+            statusDiv.innerText = (translations.save_error || 'Ошибка: ') + err.message;
         }
     };
 </script>

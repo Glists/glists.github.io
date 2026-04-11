@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Уведомления — Glists</title>
+    <title>Glists - Notifications</title>
     <style>
         :root { --bg-body: #f0f2f5; --bg-container: white; --text-primary: #1e2a3e; --border-color: #ddd; }
         body.dark { --bg-body: #1a1a2e; --bg-container: #16213e; --text-primary: #eee; --border-color: #2c3e50; }
@@ -12,13 +12,17 @@
         .notification.unread { background: #e0f0ff; }
         body.dark .notification.unread { background: #0a2a4a; }
         .back-link { display: inline-block; margin-top: 20px; color: #1877f2; text-decoration: none; }
+        .lang-toggle { background: #e4e6eb; border: none; border-radius: 20px; padding: 6px 12px; cursor: pointer; font-size: 0.9rem; margin-bottom: 15px; }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>🔔 Уведомления</h1>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h1 id="pageTitle">🔔 Уведомления</h1>
+        <button class="lang-toggle" id="langToggle">🇷🇺 RU</button>
+    </div>
     <div id="notificationsList">Загрузка...</div>
-    <a href="/" class="back-link">← На главную</a>
+    <a href="/" class="back-link" id="backLink">← На главную</a>
 </div>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -37,6 +41,56 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
+    // --- Загрузка переводов ---
+    let translations = {};
+    let currentLang = 'ru';
+    
+    function getUrlParam(param) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(param);
+    }
+    
+    async function loadTranslations(lang) {
+        const response = await fetch(`/translations/${lang}.json`);
+        if (!response.ok) throw new Error(`Failed to load ${lang} translations`);
+        return await response.json();
+    }
+    
+    function applyTranslations() {
+        document.title = translations.site_title || "Glists";
+        const pageTitle = document.getElementById('pageTitle');
+        if (pageTitle) pageTitle.innerText = translations.notifications || "Уведомления";
+        const backLink = document.getElementById('backLink');
+        if (backLink) backLink.innerText = translations.back_home || "← На главную";
+        const langToggle = document.getElementById('langToggle');
+        if (langToggle) langToggle.innerText = currentLang === 'ru' ? translations.lang_ru : translations.lang_en;
+    }
+    
+    // Инициализация языка
+    const urlLang = getUrlParam('hl');
+    if (urlLang && (urlLang === 'ru' || urlLang === 'en')) {
+        currentLang = urlLang;
+        localStorage.setItem('glists_lang', currentLang);
+    } else {
+        const savedLang = localStorage.getItem('glists_lang');
+        if (savedLang && (savedLang === 'ru' || savedLang === 'en')) currentLang = savedLang;
+    }
+    
+    try {
+        translations = await loadTranslations(currentLang);
+    } catch(e) { console.error(e); }
+    applyTranslations();
+    
+    document.getElementById('langToggle').onclick = () => {
+        const newLang = currentLang === 'ru' ? 'en' : 'ru';
+        const url = new URL(window.location.href);
+        url.searchParams.set('hl', newLang);
+        window.location.href = url.toString();
+    };
+    
+    // Тема
+    if (localStorage.getItem('glists_theme') === 'dark') document.body.classList.add('dark');
+    
     onAuthStateChanged(auth, async (user) => {
         if (!user) { window.location.href = '/'; return; }
         const q = query(collection(db, 'notifications'), where('uid', '==', user.uid), orderBy('createdAt', 'desc'));
@@ -50,11 +104,11 @@
                 div.className = `notification ${isUnread ? 'unread' : ''}`;
                 let text = '';
                 switch (n.type) {
-                    case 'like': text = `${n.fromName} лайкнул ваш пост`; break;
-                    case 'repost': text = `${n.fromName} репостнул ваш пост`; break;
-                    case 'comment': text = `${n.fromName} оставил комментарий`; break;
-                    case 'mention': text = `${n.fromName} упомянул вас`; break;
-                    default: text = `Новое уведомление`;
+                    case 'like': text = translations.liked_your_post?.replace('{name}', n.fromName) || `${n.fromName} лайкнул ваш пост`; break;
+                    case 'repost': text = translations.reposted_your_post?.replace('{name}', n.fromName) || `${n.fromName} репостнул ваш пост`; break;
+                    case 'comment': text = translations.commented_your_post?.replace('{name}', n.fromName) || `${n.fromName} оставил комментарий`; break;
+                    case 'mention': text = translations.mentioned_you?.replace('{name}', n.fromName) || `${n.fromName} упомянул вас`; break;
+                    default: text = translations.notification_default || "Новое уведомление";
                 }
                 div.innerHTML = `<div>${text}</div><small>${new Date(n.createdAt.toDate()).toLocaleString()}</small>`;
                 container.appendChild(div);
@@ -62,10 +116,9 @@
                     updateDoc(doc(db, 'notifications', docSnap.id), { read: true });
                 }
             });
-            if (snap.empty) container.innerHTML = '<p>Уведомлений пока нет</p>';
+            if (snap.empty) container.innerHTML = `<p>${translations.no_notifications || "Уведомлений пока нет"}</p>`;
         });
     });
-    if (localStorage.getItem('glists_theme') === 'dark') document.body.classList.add('dark');
 </script>
 </body>
 </html>
