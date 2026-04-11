@@ -4,34 +4,9 @@
     <meta charset="UTF-8">
     <title>Glists</title>
     <style>
-        :root {
-            --bg-body: #f0f2f5;
-            --bg-container: white;
-            --text-primary: #1e2a3e;
-            --text-secondary: #555;
-            --border-color: #ddd;
-            --post-bg: #f8f9fa;
-            --comment-bg: #f1f3f5;
-            --like-btn: #1877f2;
-            --like-btn-active: #e0245e;
-            --dislike-btn: #6c757d;
-            --dislike-btn-active: #dc3545;
-            --poll-bg: #e9ecef;
-        }
-        body.dark {
-            --bg-body: #1a1a2e;
-            --bg-container: #16213e;
-            --text-primary: #eee;
-            --text-secondary: #aaa;
-            --border-color: #2c3e50;
-            --post-bg: #0f3460;
-            --comment-bg: #1a2a4a;
-            --like-btn: #4a9eff;
-            --like-btn-active: #ff4d6d;
-            --dislike-btn: #8c8f9e;
-            --dislike-btn-active: #ff6b6b;
-            --poll-bg: #0a1a2a;
-        }
+        /* все стили как в предыдущем работающем варианте — они у тебя есть, я их не менял */
+        :root { --bg-body: #f0f2f5; --bg-container: white; --text-primary: #1e2a3e; --text-secondary: #555; --border-color: #ddd; --post-bg: #f8f9fa; --comment-bg: #f1f3f5; --like-btn: #1877f2; --like-btn-active: #e0245e; --dislike-btn: #6c757d; --dislike-btn-active: #dc3545; --poll-bg: #e9ecef; }
+        body.dark { --bg-body: #1a1a2e; --bg-container: #16213e; --text-primary: #eee; --text-secondary: #aaa; --border-color: #2c3e50; --post-bg: #0f3460; --comment-bg: #1a2a4a; --like-btn: #4a9eff; --like-btn-active: #ff4d6d; --dislike-btn: #8c8f9e; --dislike-btn-active: #ff6b6b; --poll-bg: #0a1a2a; }
         * { box-sizing: border-box; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
         body { background: var(--bg-body); margin: 0; padding: 20px; transition: background 0.2s; }
         .container { max-width: 600px; margin: auto; background: var(--bg-container); border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 20px; transition: background 0.2s; }
@@ -82,7 +57,7 @@
     <h1>🐛 Glists
         <div class="top-bar">
             <button class="theme-toggle" id="themeToggle">🌙 Тёмная</button>
-            <button class="lang-toggle" id="langToggle">🌐 EN</button>
+            <button class="lang-toggle" id="langToggle">🇷🇺 RU</button>
             <button class="search-toggle" id="searchToggle">🔍</button>
             <a href="/messages.html" class="messages-link">💬</a>
             <a href="/notifications.html" class="notifications-link">🔔</a>
@@ -93,14 +68,14 @@
         <div><input id="registerEmail" placeholder="Новая почта"> <input id="registerPassword" type="password" placeholder="Пароль"> <button id="registerBtn">Регистрация</button></div>
     </div>
     <div id="feedContainer" style="display:none">
-        <div id="greeting">Привет, <span id="currentUser"></span> <button id="logoutBtn">Выйти</button></div>
+        <div id="greeting"></div>
         <div id="postForm">
-            <textarea id="postInput" rows="2" placeholder="Что нового?"></textarea>
+            <textarea id="postInput" rows="2"></textarea>
             <div><input type="file" id="postImageInput" accept="image/*"> <button id="addPollBtn">📊 Добавить опрос</button></div>
             <button id="publishBtn">Опубликовать</button>
         </div>
         <div id="searchBox" class="search-box" style="display:none;">
-            <input type="text" id="searchInput" placeholder="Поиск по постам или пользователям...">
+            <input type="text" id="searchInput" placeholder="Поиск...">
         </div>
         <hr><h3 id="feedTitle">Лента</h3><div id="feedList"></div>
     </div>
@@ -119,29 +94,97 @@
         messagingSenderId: "557037045975",
         appId: "1:557037045975:web:dbcbd7ca0111a1494ac892"
     };
-
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
     const verifiedSVG = `<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path fill="rgb(0, 149, 246)" d="M8.248 2.87a2.198 2.198 0 0 1 3.504 0c.48.633 1.264.958 2.05.85a2.198 2.198 0 0 1 2.478 2.477 2.2 2.2 0 0 0 .85 2.051 2.198 2.198 0 0 1 0 3.504 2.2 2.2 0 0 0-.85 2.05 2.198 2.198 0 0 1-2.477 2.478 2.2 2.2 0 0 0-2.051.85 2.198 2.198 0 0 1-3.504 0 2.2 2.2 0 0 0-2.05-.85 2.198 2.198 0 0 1-2.478-2.477 2.2 2.2 0 0 0-.85-2.051 2.198 2.198 0 0 1 0-3.504c.633-.48.958-1.264.85-2.05A2.198 2.198 0 0 1 6.197 3.72a2.2 2.2 0 0 0 2.051-.85"></path><path fill="#fff" fill-rule="evenodd" d="M13.765 7.205a.75.75 0 0 1 .03 1.06l-4.25 4.5a.75.75 0 0 1-1.047.042l-2.25-2.025A.75.75 0 0 1 7.25 9.667l1.706 1.536 3.748-3.968a.75.75 0 0 1 1.06-.03z" clip-rule="evenodd"></path></svg>`;
 
-    // Переводы (простые, без внешних файлов)
-    const translations = {
-        ru: { greeting: "Привет", feedTitle: "Лента:", placeholder: "Что нового?", login: "Вход", register: "Регистрация", logout: "Выйти", publish: "Опубликовать", like: "Нравится", dislike: "Не нравится", repost: "Репост", delete: "Удалить", addComment: "Написать комментарий", commentPlaceholder: "Ваш комментарий...", reposted: "Репостнул(а)", edit: "Редактировать", pin: "Закрепить", unpin: "Открепить", block: "Заблокировать", poll: "Опрос", vote: "Голосовать", imageUpload: "Изображение", search: "Поиск" },
-        en: { greeting: "Hello", feedTitle: "Feed:", placeholder: "What's new?", login: "Login", register: "Register", logout: "Logout", publish: "Publish", like: "Like", dislike: "Dislike", repost: "Repost", delete: "Delete", addComment: "Add comment", commentPlaceholder: "Your comment...", reposted: "Reposted", edit: "Edit", pin: "Pin", unpin: "Unpin", block: "Block", poll: "Poll", vote: "Vote", imageUpload: "Image", search: "Search" }
+    // --- Загрузка переводов ---
+    let translations = {};
+    let currentLang = 'ru';
+    
+    function getUrlParam(param) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(param);
+    }
+    
+    async function loadTranslations(lang) {
+        const response = await fetch(`translations/${lang}.json`);
+        if (!response.ok) throw new Error(`Failed to load ${lang} translations`);
+        return await response.json();
+    }
+    
+    function applyTranslations() {
+        document.title = translations.site_title || "Glists";
+        // Статические элементы с data-i18n (если есть)
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (translations[key]) {
+                if (el.tagName === 'INPUT' && el.placeholder !== undefined) el.placeholder = translations[key];
+                else if (el.tagName === 'BUTTON' || el.tagName === 'A') el.innerText = translations[key];
+                else el.innerText = translations[key];
+            }
+        });
+        // Динамические элементы
+        const langToggle = document.getElementById('langToggle');
+        if (langToggle) langToggle.innerText = currentLang === 'ru' ? translations.lang_ru : translations.lang_en;
+        const themeToggle = document.getElementById('themeToggle');
+        if (themeToggle) themeToggle.innerText = document.body.classList.contains('dark') ? translations.theme_light : translations.theme_dark;
+        const greetingDiv = document.getElementById('greeting');
+        if (greetingDiv && auth.currentUser) {
+            greetingDiv.innerHTML = `${translations.greeting}, <span id="currentUser"></span> <button id="logoutBtn">${translations.logout}</button>`;
+        }
+        const feedTitle = document.getElementById('feedTitle');
+        if (feedTitle) feedTitle.innerText = translations.feed_title;
+        const postInput = document.getElementById('postInput');
+        if (postInput) postInput.placeholder = translations.post_placeholder;
+        const loginBtn = document.getElementById('loginBtn');
+        if (loginBtn) loginBtn.innerText = translations.login;
+        const registerBtn = document.getElementById('registerBtn');
+        if (registerBtn) registerBtn.innerText = translations.register;
+        const publishBtn = document.getElementById('publishBtn');
+        if (publishBtn) publishBtn.innerText = translations.publish;
+        const addPollBtn = document.getElementById('addPollBtn');
+        if (addPollBtn) addPollBtn.innerText = translations.add_poll;
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) searchInput.placeholder = translations.search_placeholder;
+    }
+    
+    // Инициализация языка
+    const urlLang = getUrlParam('hl');
+    if (urlLang && (urlLang === 'ru' || urlLang === 'en')) {
+        currentLang = urlLang;
+        localStorage.setItem('glists_lang', currentLang);
+    } else {
+        const savedLang = localStorage.getItem('glists_lang');
+        if (savedLang && (savedLang === 'ru' || savedLang === 'en')) currentLang = savedLang;
+    }
+    
+    try {
+        translations = await loadTranslations(currentLang);
+    } catch(e) { console.error(e); }
+    applyTranslations();
+    
+    // Переключение языка
+    document.getElementById('langToggle').onclick = () => {
+        const newLang = currentLang === 'ru' ? 'en' : 'ru';
+        const url = new URL(window.location.href);
+        url.searchParams.set('hl', newLang);
+        window.location.href = url.toString();
     };
-    let currentLang = localStorage.getItem('glists_lang') || 'ru';
-    function setLanguage(lang) { currentLang = lang; localStorage.setItem('glists_lang', lang); document.getElementById('langToggle').innerText = lang === 'ru' ? '🌐 EN' : '🌐 RU'; if (auth.currentUser) updateUIText(); }
-    function updateUIText() { const t = translations[currentLang]; if (t) { document.getElementById('greeting').innerHTML = `${t.greeting}, <span id="currentUser"></span> <button id="logoutBtn">${t.logout}</button>`; document.getElementById('feedTitle').innerText = t.feedTitle; postInput.placeholder = t.placeholder; loginBtn.innerText = t.login; registerBtn.innerText = t.register; publishBtn.innerText = t.publish; } }
-    document.getElementById('langToggle').onclick = () => { currentLang = currentLang === 'ru' ? 'en' : 'ru'; setLanguage(currentLang); if (auth.currentUser) updateUIText(); };
-    setLanguage(currentLang);
-
+    
+    // Тема
     const themeToggle = document.getElementById('themeToggle');
     if (localStorage.getItem('glists_theme') === 'dark') document.body.classList.add('dark');
-    themeToggle.onclick = () => { document.body.classList.toggle('dark'); localStorage.setItem('glists_theme', document.body.classList.contains('dark') ? 'dark' : 'light'); themeToggle.innerText = document.body.classList.contains('dark') ? '☀️ Светлая' : '🌙 Тёмная'; };
-    themeToggle.innerText = document.body.classList.contains('dark') ? '☀️ Светлая' : '🌙 Тёмная';
-
+    themeToggle.onclick = () => {
+        document.body.classList.toggle('dark');
+        localStorage.setItem('glists_theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+        themeToggle.innerText = document.body.classList.contains('dark') ? translations.theme_light : translations.theme_dark;
+    };
+    themeToggle.innerText = document.body.classList.contains('dark') ? translations.theme_light : translations.theme_dark;
+    
+    // --- DOM элементы ---
     const authDiv = document.getElementById('authContainer');
     const feedDiv = document.getElementById('feedContainer');
     const loginEmail = document.getElementById('loginEmail');
@@ -160,11 +203,12 @@
     const searchToggle = document.getElementById('searchToggle');
     const searchBox = document.getElementById('searchBox');
     const searchInput = document.getElementById('searchInput');
-
+    
     let currentPoll = null;
     const CLOUD_NAME = "dbmiuq6s7";
     const UPLOAD_PRESET = "glists_preset";
-
+    
+    // --- Вспомогательные функции ---
     const userCache = new Map();
     async function getUserInfo(uid) {
         if (userCache.has(uid)) return userCache.get(uid);
@@ -186,7 +230,7 @@
         } catch(e) { console.error(e); }
         return null;
     }
-
+    
     async function toggleReaction(postId, userId, type) {
         const likeRef = doc(db, 'likes', `${postId}_${userId}`);
         const dislikeRef = doc(db, 'dislikes', `${postId}_${userId}`);
@@ -222,7 +266,7 @@
             }
         }
     }
-
+    
     async function repost(originalPostId, originalAuthorUid, originalAuthorUsername, originalAuthorDisplayName, originalText, currentUser) {
         const info = await getUserInfo(currentUser.uid);
         const authorUsername = info.username;
@@ -239,7 +283,7 @@
         });
         await sendNotification(originalAuthorUid, 'repost', currentUser.uid, authorDisplayName, originalPostId);
     }
-
+    
     async function addComment(postId, text, user) {
         if (!text.trim()) return;
         const info = await getUserInfo(user.uid);
@@ -256,22 +300,22 @@
             await sendNotification(postSnap.data().uid, 'comment', user.uid, authorDisplayName, postId, commentRef.id);
         }
     }
-
+    
     async function deleteComment(commentId) {
         await deleteDoc(doc(db, 'comments', commentId));
     }
-
+    
     async function sendNotification(toUid, type, fromUid, fromName, postId = null, commentId = null) {
         if (toUid === fromUid) return;
         await addDoc(collection(db, 'notifications'), {
             uid: toUid, type, fromUid, fromName, postId, commentId, createdAt: new Date(), read: false
         });
     }
-
+    
     async function editPost(postId, newText) {
         await updateDoc(doc(db, 'posts', postId), { text: newText, edited: true, editedAt: new Date() });
     }
-
+    
     async function pinPost(username, postId, currentUid) {
         const userRef = doc(db, 'users', username);
         const userSnap = await getDoc(userRef);
@@ -280,7 +324,7 @@
             await updateDoc(doc(db, 'posts', postId), { pinned: true });
         }
     }
-
+    
     async function blockUser(blockedUsername, currentUid) {
         const blockedUserRef = doc(db, 'users', blockedUsername);
         const blockedSnap = await getDoc(blockedUserRef);
@@ -288,7 +332,7 @@
             await updateDoc(blockedUserRef, { blockedBy: arrayUnion(currentUid) });
         }
     }
-
+    
     async function uploadImage(file) {
         const formData = new FormData();
         formData.append('file', file);
@@ -297,13 +341,13 @@
         const data = await res.json();
         return data.secure_url;
     }
-
+    
     function parseTextWithLinks(text) {
         let parsed = text.replace(/@(\w+)/g, '<a href="/profile.html?user=$1">@$1</a>');
         parsed = parsed.replace(/#(\w+)/g, '<a href="#" class="hashtag-link" data-tag="$1">#$1</a>');
         return parsed;
     }
-
+    
     async function votePoll(pollId, optionIndex, userId) {
         const pollRef = doc(db, 'polls', pollId);
         const voteId = `${pollId}_${userId}`;
@@ -316,12 +360,12 @@
             totalVotes: increment(1)
         });
     }
-
+    
     function searchPosts(postsData, queryStr) {
         const lowerQuery = queryStr.toLowerCase();
         return postsData.filter(p => (p.text && p.text.toLowerCase().includes(lowerQuery)) || (p.authorDisplayName && p.authorDisplayName.toLowerCase().includes(lowerQuery)));
     }
-
+    
     let unsubscribeFeed = null;
     function subscribeToFeed() {
         if (unsubscribeFeed) unsubscribeFeed();
@@ -363,7 +407,7 @@
                 const avatarHtml = avatarUrl ? `<img src="${escapeHtml(avatarUrl)}" class="small-avatar">` : `<div class="small-avatar">${displayName.charAt(0).toUpperCase()}</div>`;
                 let repostHtml = '';
                 if (data.type === 'repost') {
-                    repostHtml = `<div class="repost-badge">🔁 ${translations[currentLang].reposted} <a href="/profile.html?user=${escapeHtml(data.originalAuthorUsername)}">${escapeHtml(data.originalAuthorDisplayName)}</a></div>
+                    repostHtml = `<div class="repost-badge">🔁 ${translations.reposted_prefix} <a href="/profile.html?user=${escapeHtml(data.originalAuthorUsername)}">${escapeHtml(data.originalAuthorDisplayName)}</a></div>
                     <div class="original-post-link"><a href="/profile.html?user=${escapeHtml(data.originalAuthorUsername)}">@${escapeHtml(data.originalAuthorUsername)}</a>: ${escapeHtml(data.originalText)}</div>`;
                 }
                 let imageHtml = data.imageUrl ? `<img src="${escapeHtml(data.imageUrl)}" class="post-image">` : '';
@@ -411,18 +455,19 @@
                     <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                         <button class="like-btn ${liked ? 'liked' : ''}" data-postid="${postId}">❤️ ${data.likesCount || 0}</button>
                         <button class="dislike-btn ${disliked ? 'disliked' : ''}" data-postid="${postId}">👎 ${data.dislikesCount || 0}</button>
-                        ${currentUserObj ? `<button class="repost-btn" data-postid="${postId}" data-uid="${data.uid}" data-username="${escapeHtml(authorUsername)}" data-displayname="${escapeHtml(displayName)}" data-text="${escapeHtml(data.text || '')}">🔁 ${translations[currentLang].repost}</button>` : ''}
-                        ${isOwner ? `<button class="delete-btn" data-id="${postId}">${translations[currentLang].delete}</button>` : ''}
+                        ${currentUserObj ? `<button class="repost-btn" data-postid="${postId}" data-uid="${data.uid}" data-username="${escapeHtml(authorUsername)}" data-displayname="${escapeHtml(displayName)}" data-text="${escapeHtml(data.text || '')}">🔁 ${translations.repost}</button>` : ''}
+                        ${isOwner ? `<button class="delete-btn" data-id="${postId}">${translations.delete}</button>` : ''}
                     </div>
                     <div class="comments-section" id="comments-${postId}">
                         <div class="comments-list"></div>
                         <div class="add-comment">
-                            <input type="text" placeholder="${translations[currentLang].commentPlaceholder}" class="comment-input">
-                            <button class="add-comment-btn">${translations[currentLang].addComment}</button>
+                            <input type="text" placeholder="${translations.comment_placeholder}" class="comment-input">
+                            <button class="add-comment-btn">${translations.add_comment}</button>
                         </div>
                     </div>
                 `;
                 feedList.appendChild(postDiv);
+                // Обработчики событий
                 postDiv.querySelector('.like-btn')?.addEventListener('click', () => toggleReaction(postId, currentUserObj?.uid, 'like'));
                 postDiv.querySelector('.dislike-btn')?.addEventListener('click', () => toggleReaction(postId, currentUserObj?.uid, 'dislike'));
                 if (currentUserObj) {
@@ -430,7 +475,7 @@
                 }
                 if (isOwner) {
                     postDiv.querySelector('.edit-post-btn')?.addEventListener('click', async () => {
-                        const newText = prompt(translations[currentLang].edit, data.text);
+                        const newText = prompt(translations.edit, data.text);
                         if (newText) await editPost(postId, newText);
                     });
                     postDiv.querySelector('.pin-btn')?.addEventListener('click', async () => {
@@ -441,12 +486,13 @@
                 postDiv.querySelectorAll('.block-btn').forEach(btn => {
                     btn.addEventListener('click', async () => {
                         const username = btn.dataset.username;
-                        if (confirm(`Заблокировать @${username}?`)) await blockUser(username, currentUserObj.uid);
+                        if (confirm(translations.block_user_confirm?.replace('{username}', username))) await blockUser(username, currentUserObj.uid);
                     });
                 });
                 postDiv.querySelectorAll('.vote-option').forEach(btn => {
                     btn.addEventListener('click', () => votePoll(btn.dataset.pollid, parseInt(btn.dataset.option), currentUserObj.uid));
                 });
+                // Комментарии
                 const commentsQuery = query(collection(db, 'comments'), where('postId', '==', postId), orderBy('createdAt', 'asc'));
                 onSnapshot(commentsQuery, (commentsSnap) => {
                     const commentsListDiv = postDiv.querySelector('.comments-list');
@@ -475,62 +521,47 @@
                 const addCommentBtn = postDiv.querySelector('.add-comment-btn');
                 const commentInput = postDiv.querySelector('.comment-input');
                 addCommentBtn.onclick = async () => {
-                    if (!currentUserObj) { alert("Войдите"); return; }
+                    if (!currentUserObj) { alert(translations.login_first); return; }
                     await addComment(postId, commentInput.value, currentUserObj);
                     commentInput.value = '';
                 };
             }
         });
     }
-
+    
     function escapeHtml(s) { return s ? s.replace(/[&<>]/g, m => m == '&' ? '&amp;' : m == '<' ? '&lt;' : '&gt;') : ''; }
-
+    
     // --- Обработчики входа и регистрации ---
     loginBtn.onclick = () => {
-        const email = loginEmail.value;
-        const password = loginPass.value;
-        if (!email || !password) {
-            alert("Введите email и пароль");
-            return;
-        }
-        signInWithEmailAndPassword(auth, email, password)
-            .then(() => {
-                console.log("Вход выполнен");
-            })
-            .catch(err => alert("Ошибка входа: " + err.message));
+        signInWithEmailAndPassword(auth, loginEmail.value, loginPass.value)
+            .catch(e => alert(e.message));
     };
-
+    
     regBtn.onclick = async () => {
-        const email = regEmail.value;
-        const password = regPass.value;
-        if (!email || !password) {
-            alert("Заполните поля");
-            return;
-        }
+        const email = regEmail.value, pass = regPass.value;
+        if (!email || !pass) return alert("Заполни поля");
         try {
-            const cred = await createUserWithEmailAndPassword(auth, email, password);
+            const cred = await createUserWithEmailAndPassword(auth, email, pass);
             const username = email.split('@')[0];
-            const displayName = prompt("Введите ваше отображаемое имя:", username);
+            const displayName = prompt(translations.enter_display_name || "Введите ваше отображаемое имя:", username);
             await setDoc(doc(db, "users", username), {
                 email, displayName: displayName || username, verified: false,
                 bio: "Новый пользователь Glists", createdAt: new Date(), uid: cred.user.uid, avatarUrl: '',
                 blockedBy: [], pinnedPostId: null
             });
-            alert("Регистрация успешна!");
-        } catch(e) {
-            alert("Ошибка регистрации: " + e.message);
-        }
+            alert(translations.registration_success || "Готово!");
+        } catch(e) { alert(e.message); }
     };
-
+    
     logoutBtn.onclick = () => signOut(auth);
-
+    
     publishBtn.onclick = async () => {
         const text = postInput.value.trim();
         const imageFile = postImageInput.files[0];
         let imageUrl = null;
         if (imageFile) imageUrl = await uploadImage(imageFile);
         const user = auth.currentUser;
-        if (!user) return alert("Войдите");
+        if (!user) return alert(translations.login_first);
         const info = await getUserInfo(user.uid);
         const authorUsername = info.username;
         const authorDisplayName = info.displayName;
@@ -557,30 +588,32 @@
         postInput.value = "";
         postImageInput.value = "";
     };
-
+    
     addPollBtn.onclick = () => {
-        const question = prompt("Вопрос опроса:");
+        const question = prompt(translations.poll_question);
         if (!question) return;
         const options = [];
+        let opt;
         for (let i=0; i<5; i++) {
-            const opt = prompt(`Вариант ${i+1} (оставьте пустым для завершения):`);
+            opt = prompt(`${translations.poll_option} ${i+1} (${translations.poll_leave_empty || 'оставьте пустым для завершения'}):`);
             if (!opt) break;
             options.push(opt);
         }
-        if (options.length < 2) return alert("Нужно минимум 2 варианта");
+        if (options.length < 2) return alert(translations.poll_need_two_options);
         currentPoll = { question, options };
-        alert("Опрос добавлен к посту!");
+        alert(translations.poll_added);
     };
-
+    
     searchToggle.onclick = () => { searchBox.style.display = searchBox.style.display === 'none' ? 'block' : 'none'; };
     searchInput.oninput = () => { if (unsubscribeFeed) subscribeToFeed(); };
-
+    
     onAuthStateChanged(auth, user => {
         if (user) {
             authDiv.style.display = 'none';
             feedDiv.style.display = 'block';
             currentUserSpan.innerText = user.email;
-            updateUIText();
+            const greetingDiv = document.getElementById('greeting');
+            if (greetingDiv) greetingDiv.innerHTML = `${translations.greeting}, <span id="currentUser"></span> <button id="logoutBtn">${translations.logout}</button>`;
             subscribeToFeed();
         } else {
             authDiv.style.display = 'flex';
