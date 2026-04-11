@@ -3,30 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Моя Соцсеть — Чайник Лента</title>
-    <!-- Firebase SDK (последние версии) -->
+    <title>Glists</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // TODO: СЮДА ВСТАВИТЬ СВОЙ КОНФИГ ИЗ FIREBASE (скопируешь позже)
         const firebaseConfig = {
-			apiKey: "AIzaSyCzqpQniq7LiwRZ_L_FKEsIXh6CfC76QHA",
-			authDomain: "myfirstsocialnetwork-0.firebaseapp.com",
-			projectId: "myfirstsocialnetwork-0",
-			storageBucket: "myfirstsocialnetwork-0.firebasestorage.app",
-			messagingSenderId: "557037045975",
-			appId: "1:557037045975:web:dbcbd7ca0111a1494ac892",
-			measurementId: "G-YXT6783VPM"   // эту строчку можно оставить или удалить — не важно
-		};
+            apiKey: "AIzaSyCzqpQniq7LiwRZ_L_FKEsIXh6CfC76QHA",
+            authDomain: "myfirstsocialnetwork-0.firebaseapp.com",
+            projectId: "myfirstsocialnetwork-0",
+            storageBucket: "myfirstsocialnetwork-0.firebasestorage.app",
+            messagingSenderId: "557037045975",
+            appId: "1:557037045975:web:dbcbd7ca0111a1494ac892"
+        };
 
-        // Инициализация
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // DOM элементы
+        // DOM
         const authContainer = document.getElementById('authContainer');
         const feedContainer = document.getElementById('feedContainer');
         const loginEmail = document.getElementById('loginEmail');
@@ -46,12 +42,31 @@
             signInWithEmailAndPassword(auth, loginEmail.value, loginPassword.value)
                 .catch(err => alert("Ошибка входа: " + err.message));
         };
-        // Регистрация
-        registerBtn.onclick = () => {
-            createUserWithEmailAndPassword(auth, registerEmail.value, registerPassword.value)
-                .then(() => { alert("Регистрация успешна! Теперь вы вошли."); })
-                .catch(err => alert("Ошибка регистрации: " + err.message));
+
+        // Регистрация + создание профиля в коллекции users
+        registerBtn.onclick = async () => {
+            const email = registerEmail.value;
+            const password = registerPassword.value;
+            if (!email || !password) return alert("Введи почту и пароль");
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                const username = email.split('@')[0];
+                // Создаём документ пользователя в коллекции "users"
+                await setDoc(doc(db, "users", username), {
+                    email: user.email,
+                    displayName: username,
+                    verified: false,
+                    bio: "Новый пользователь Glists",
+                    createdAt: new Date(),
+                    uid: user.uid
+                });
+                alert("Регистрация успешна! Профиль создан.");
+            } catch (err) {
+                alert("Ошибка регистрации: " + err.message);
+            }
         };
+
         // Выход
         logoutBtn.onclick = () => signOut(auth);
 
@@ -70,7 +85,7 @@
             postInput.value = "";
         };
 
-        // Реальное обновление ленты
+        // Лента
         function subscribeToFeed() {
             const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
             onSnapshot(q, (snapshot) => {
@@ -80,20 +95,20 @@
                     const postId = docSnap.id;
                     const date = data.createdAt ? new Date(data.createdAt.toDate()).toLocaleString() : "только что";
                     const isOwner = auth.currentUser && auth.currentUser.uid === data.uid;
+                    const username = data.email.split('@')[0];
                     const postDiv = document.createElement('div');
                     postDiv.className = 'post';
                     postDiv.innerHTML = `
                         <div class="post-header">
-                            <a href="/user/${escapeHtml(data.email.split('@')[0])}" style="color: inherit; text-decoration: none;">
-								<strong>${escapeHtml(data.email)}</strong>
-							</a>
+                            <a href="/user/${escapeHtml(username)}" style="color: inherit; text-decoration: none;">
+                                <strong>${escapeHtml(data.email)}</strong>
+                            </a>
                             <span class="post-date">${date}</span>
                         </div>
                         <div class="post-text">${escapeHtml(data.text)}</div>
                         ${isOwner ? `<button class="delete-btn" data-id="${postId}">🗑 Удалить</button>` : ''}
                     `;
                     feedList.appendChild(postDiv);
-                    // вешаем удаление
                     if (isOwner) {
                         const delBtn = postDiv.querySelector('.delete-btn');
                         delBtn.onclick = () => deleteDoc(doc(db, "posts", postId));
@@ -102,7 +117,6 @@
             });
         }
 
-        // Простейшая защита от XSS
         function escapeHtml(str) {
             return str.replace(/[&<>]/g, function(m) {
                 if (m === '&') return '&amp;';
@@ -112,13 +126,12 @@
             });
         }
 
-        // Следим за состоянием входа
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 authContainer.style.display = 'none';
                 feedContainer.style.display = 'block';
                 currentUserSpan.innerText = user.email;
-                subscribeToFeed();  // начинаем слушать посты
+                subscribeToFeed();
             } else {
                 authContainer.style.display = 'flex';
                 feedContainer.style.display = 'none';
@@ -152,8 +165,7 @@
 </head>
 <body>
 <div class="container">
-    <h1>📱 Моя Соцсеть</h1>
-    <!-- Блок входа/регистрации -->
+    <h1>🐛 Glists</h1>
     <div id="authContainer" class="auth-box">
         <div class="auth-row">
             <input type="email" id="loginEmail" placeholder="Почта">
@@ -166,15 +178,13 @@
             <button id="registerBtn">Регистрация</button>
         </div>
     </div>
-
-    <!-- Лента (видна только после входа) -->
     <div id="feedContainer" style="display: none;">
         <div class="feed-header">
             <span>Привет, <span id="currentUser"></span>!</span>
             <button id="logoutBtn" class="logout-btn">🚪 Выйти</button>
         </div>
         <div class="post-form">
-            <input type="text" id="postInput" placeholder="Что нового, пахан?">
+            <input type="text" id="postInput" placeholder="Что нового, Glists?">
             <button id="publishBtn">Опубликовать</button>
         </div>
         <hr>
