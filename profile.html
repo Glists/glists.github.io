@@ -8,6 +8,7 @@
         .container { max-width: 600px; margin: auto; background: white; border-radius: 16px; padding: 20px; }
         .avatar { width: 80px; height: 80px; border-radius: 50%; background: #1877f2; color: white; display: flex; align-items: center; justify-content: center; font-size: 2rem; }
         .post { border-left: 4px solid #1877f2; margin: 10px 0; padding: 10px; background: #f8f9fa; }
+        .verified-icon { display: inline-flex; margin-left: 4px; vertical-align: middle; }
     </style>
 </head>
 <body>
@@ -15,6 +16,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, doc, getDoc, collection, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
     const config = {
         apiKey: "AIzaSyCzqpQniq7LiwRZ_L_FKEsIXh6CfC76QHA",
         authDomain: "myfirstsocialnetwork-0.firebaseapp.com",
@@ -23,12 +25,18 @@
         messagingSenderId: "557037045975",
         appId: "1:557037045975:web:dbcbd7ca0111a1494ac892"
     };
+
     const app = initializeApp(config);
     const db = getFirestore(app);
     const params = new URLSearchParams(location.search);
     const username = params.get('user');
-    if (!username) document.getElementById('root').innerHTML = 'Не указан пользователь';
-    else {
+
+    // SVG иконка верификации (синяя галочка)
+    const verifiedSVG = `<svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none"><path fill="rgb(0, 149, 246)" d="M8.248 2.87a2.198 2.198 0 0 1 3.504 0c.48.633 1.264.958 2.05.85a2.198 2.198 0 0 1 2.478 2.477 2.2 2.2 0 0 0 .85 2.051 2.198 2.198 0 0 1 0 3.504 2.2 2.2 0 0 0-.85 2.05 2.198 2.198 0 0 1-2.477 2.478 2.2 2.2 0 0 0-2.051.85 2.198 2.198 0 0 1-3.504 0 2.2 2.2 0 0 0-2.05-.85 2.198 2.198 0 0 1-2.478-2.477 2.2 2.2 0 0 0-.85-2.051 2.198 2.198 0 0 1 0-3.504c.633-.48.958-1.264.85-2.05A2.198 2.198 0 0 1 6.197 3.72a2.2 2.2 0 0 0 2.051-.85"></path><path fill="#fff" fill-rule="evenodd" d="M13.765 7.205a.75.75 0 0 1 .03 1.06l-4.25 4.5a.75.75 0 0 1-1.047.042l-2.25-2.025A.75.75 0 0 1 7.25 9.667l1.706 1.536 3.748-3.968a.75.75 0 0 1 1.06-.03z" clip-rule="evenodd"></path></svg>`;
+
+    if (!username) {
+        document.getElementById('root').innerHTML = 'Не указан пользователь';
+    } else {
         const userRef = doc(db, 'users', username);
         const userSnap = await getDoc(userRef);
         if (!userSnap.exists()) {
@@ -43,10 +51,17 @@
                 const date = p.createdAt ? new Date(p.createdAt.toDate()).toLocaleString() : '';
                 postsHtml += `<div class="post"><div>${date}</div><div>${escapeHtml(p.text)}</div></div>`;
             });
+            
+            // Галочка, если verified === true
+            const verifiedBadge = data.verified ? `<span class="verified-icon">${verifiedSVG}</span>` : '';
+            
             document.getElementById('root').innerHTML = `
                 <div style="display:flex; gap:20px; align-items:center;">
                     <div class="avatar">${username[0].toUpperCase()}</div>
-                    <div><h1>@${username} ${data.verified ? '✅' : ''}</h1><p>${escapeHtml(data.bio || '')}</p></div>
+                    <div>
+                        <h1>@${escapeHtml(username)} ${verifiedBadge}</h1>
+                        <p>${escapeHtml(data.bio || '')}</p>
+                    </div>
                 </div>
                 <h3>Посты</h3>
                 ${postsHtml || '<p>Нет постов</p>'}
@@ -54,7 +69,10 @@
             `;
         }
     }
-    function escapeHtml(s) { return s.replace(/[&<>]/g, m => m == '&' ? '&amp;' : m == '<' ? '&lt;' : '&gt;'); }
+
+    function escapeHtml(s) { 
+        return s ? s.replace(/[&<>]/g, m => m == '&' ? '&amp;' : m == '<' ? '&lt;' : '&gt;') : ''; 
+    }
 </script>
 </body>
 </html>
