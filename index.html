@@ -4,23 +4,15 @@
     <meta charset="UTF-8">
     <title>Glists</title>
     <style>
-        body { background: #f0f2f5; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; padding: 20px; margin: 0; }
-        .container { max-width: 600px; margin: auto; background: white; border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        input, button { padding: 10px; margin: 5px; border-radius: 8px; border: 1px solid #ddd; font-size: 1rem; }
-        button { background: #1877f2; color: white; border: none; cursor: pointer; font-weight: bold; }
-        button:hover { background: #0e5dc7; }
+        body { background: #f0f2f5; font-family: system-ui, sans-serif; padding: 20px; margin: 0; }
+        .container { max-width: 600px; margin: auto; background: white; border-radius: 16px; padding: 20px; }
+        input, button { padding: 10px; margin: 5px; border-radius: 8px; border: 1px solid #ddd; }
+        button { background: #1877f2; color: white; border: none; cursor: pointer; }
         .post { background: #f8f9fa; margin: 10px 0; padding: 10px; border-left: 4px solid #1877f2; border-radius: 8px; }
-        .post-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 0.85rem; color: #555; }
-        .post-author { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+        .post-header { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.8rem; color: #555; }
         .post-author a { color: #1e2a3e; text-decoration: none; font-weight: bold; }
-        .post-author a:hover { text-decoration: underline; }
-        .post-date { color: #777; }
-        .post-text { margin: 8px 0; word-wrap: break-word; }
-        .delete-btn { background: #dc3545; color: white; border: none; border-radius: 20px; padding: 4px 12px; font-size: 0.75rem; cursor: pointer; }
-        .delete-btn:hover { background: #b02a37; }
+        .delete-btn { background: #dc3545; color: white; border: none; border-radius: 20px; padding: 4px 12px; cursor: pointer; }
         .verified-icon { display: inline-flex; margin-left: 4px; vertical-align: middle; }
-        .like-btn { background: none; border: none; cursor: pointer; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 20px; color: #1877f2; }
-        .like-btn.liked { color: #e0245e; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -40,7 +32,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, deleteDoc, doc, setDoc, updateDoc, increment, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, deleteDoc, doc, setDoc, getDoc, getDocs, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCzqpQniq7LiwRZ_L_FKEsIXh6CfC76QHA",
@@ -55,8 +47,7 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // SVG иконка верификации
-    const verifiedSVG = `<svg aria-hidden="true" width="18" height="18" viewBox="0 0 20 20" fill="none"><path fill="rgb(0, 149, 246)" d="M8.248 2.87a2.198 2.198 0 0 1 3.504 0c.48.633 1.264.958 2.05.85a2.198 2.198 0 0 1 2.478 2.477 2.2 2.2 0 0 0 .85 2.051 2.198 2.198 0 0 1 0 3.504 2.2 2.2 0 0 0-.85 2.05 2.198 2.198 0 0 1-2.477 2.478 2.2 2.2 0 0 0-2.051.85 2.198 2.198 0 0 1-3.504 0 2.2 2.2 0 0 0-2.05-.85 2.198 2.198 0 0 1-2.478-2.477 2.2 2.2 0 0 0-.85-2.051 2.198 2.198 0 0 1 0-3.504c.633-.48.958-1.264.85-2.05A2.198 2.198 0 0 1 6.197 3.72a2.2 2.2 0 0 0 2.051-.85"></path><path fill="#fff" fill-rule="evenodd" d="M13.765 7.205a.75.75 0 0 1 .03 1.06l-4.25 4.5a.75.75 0 0 1-1.047.042l-2.25-2.025A.75.75 0 0 1 7.25 9.667l1.706 1.536 3.748-3.968a.75.75 0 0 1 1.06-.03z" clip-rule="evenodd"></path></svg>`;
+    const verifiedSVG = `<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path fill="rgb(0, 149, 246)" d="M8.248 2.87a2.198 2.198 0 0 1 3.504 0c.48.633 1.264.958 2.05.85a2.198 2.198 0 0 1 2.478 2.477 2.2 2.2 0 0 0 .85 2.051 2.198 2.198 0 0 1 0 3.504 2.2 2.2 0 0 0-.85 2.05 2.198 2.198 0 0 1-2.477 2.478 2.2 2.2 0 0 0-2.051.85 2.198 2.198 0 0 1-3.504 0 2.2 2.2 0 0 0-2.05-.85 2.198 2.198 0 0 1-2.478-2.477 2.2 2.2 0 0 0-.85-2.051 2.198 2.198 0 0 1 0-3.504c.633-.48.958-1.264.85-2.05A2.198 2.198 0 0 1 6.197 3.72a2.2 2.2 0 0 0 2.051-.85"></path><path fill="#fff" fill-rule="evenodd" d="M13.765 7.205a.75.75 0 0 1 .03 1.06l-4.25 4.5a.75.75 0 0 1-1.047.042l-2.25-2.025A.75.75 0 0 1 7.25 9.667l1.706 1.536 3.748-3.968a.75.75 0 0 1 1.06-.03z" clip-rule="evenodd"></path></svg>`;
 
     const authDiv = document.getElementById('authContainer');
     const feedDiv = document.getElementById('feedContainer');
@@ -72,33 +63,27 @@
     const feedList = document.getElementById('feedList');
     const currentUserSpan = document.getElementById('currentUser');
 
-    // Функция проверки верификации (по коллекции users)
-    async function isUserVerified(email) {
-        if (!email) return false;
-        const username = email.split('@')[0];
+    // Кэш: uid -> nickname (ID документа в users)
+    const nicknameCache = new Map();
+
+    async function getNicknameByUid(uid) {
+        if (nicknameCache.has(uid)) return nicknameCache.get(uid);
         try {
-            const userDoc = await getDoc(doc(db, 'users', username));
-            return userDoc.exists() && userDoc.data().verified === true;
-        } catch(e) {
-            return false;
-        }
+            const q = query(collection(db, 'users'), where('uid', '==', uid));
+            const snap = await getDocs(q);
+            if (!snap.empty) {
+                const docId = snap.docs[0].id;
+                nicknameCache.set(uid, docId);
+                return docId;
+            }
+        } catch(e) { console.error(e); }
+        return null;
     }
 
-    // Функция лайка
-    async function toggleLike(postId, userId) {
-        const likeRef = doc(db, 'likes', `${postId}_${userId}`);
-        const likeSnap = await getDoc(likeRef);
-        if (likeSnap.exists()) {
-            await deleteDoc(likeRef);
-            await updateDoc(doc(db, 'posts', postId), { likesCount: increment(-1) });
-        } else {
-            await setDoc(likeRef, { postId, userId, createdAt: new Date() });
-            await updateDoc(doc(db, 'posts', postId), { likesCount: increment(1) });
-        }
-    }
-
+    // Вход
     loginBtn.onclick = () => signInWithEmailAndPassword(auth, loginEmail.value, loginPass.value).catch(e => alert(e.message));
-    
+
+    // Регистрация (создаёт документ users с ID = первая часть email, но можно потом поменять)
     regBtn.onclick = async () => {
         const email = regEmail.value, pass = regPass.value;
         if (!email || !pass) return alert("Заполни поля");
@@ -113,27 +98,31 @@
                 createdAt: new Date(),
                 uid: cred.user.uid
             });
-            alert("Готово!");
+            alert("Готово! Теперь можешь войти.");
         } catch(e) { alert(e.message); }
     };
-    
+
     logoutBtn.onclick = () => signOut(auth);
-    
+
+    // Добавление поста – сохраняем authorNick (через кэш или запрос)
     publishBtn.onclick = async () => {
         const text = postInput.value.trim();
         if (!text) return alert("Напиши пост");
         const user = auth.currentUser;
         if (!user) return alert("Войди");
-        await addDoc(collection(db, "posts"), { 
-            text, 
-            uid: user.uid, 
-            email: user.email, 
-            createdAt: new Date(),
-            likesCount: 0
+        let authorNick = await getNicknameByUid(user.uid);
+        if (!authorNick) authorNick = user.email.split('@')[0];
+        await addDoc(collection(db, "posts"), {
+            text,
+            uid: user.uid,
+            email: user.email,
+            authorNick: authorNick,
+            createdAt: new Date()
         });
         postInput.value = "";
     };
-    
+
+    // Лента
     function subscribeToFeed() {
         const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
         onSnapshot(q, async (snap) => {
@@ -144,52 +133,45 @@
                 const postId = docSnap.id;
                 const date = data.createdAt ? new Date(data.createdAt.toDate()).toLocaleString() : "";
                 const isOwner = currentUser && currentUser.uid === data.uid;
-                const username = data.email.split('@')[0];
                 
-                // Проверка лайка текущим пользователем
-                let liked = false;
-                if (currentUser) {
-                    const likeRef = doc(db, 'likes', `${postId}_${currentUser.uid}`);
-                    const likeSnap = await getDoc(likeRef);
-                    liked = likeSnap.exists();
+                // Получаем ник для ссылки
+                let displayNick = data.authorNick;
+                if (!displayNick) {
+                    displayNick = await getNicknameByUid(data.uid);
+                    if (!displayNick) displayNick = data.email.split('@')[0];
                 }
                 
-                // Проверка верификации автора
-                const verified = await isUserVerified(data.email);
-                const verifiedBadge = verified ? `<span class="verified-icon">${verifiedSVG}</span>` : '';
-                
+                // Проверка верификации (по uid)
+                let verified = false;
+                try {
+                    const qq = query(collection(db, 'users'), where('uid', '==', data.uid));
+                    const snapUser = await getDocs(qq);
+                    if (!snapUser.empty) verified = snapUser.docs[0].data().verified === true;
+                } catch(e) {}
+
                 const div = document.createElement('div');
                 div.className = 'post';
                 div.innerHTML = `
                     <div class="post-header">
                         <div class="post-author">
-                            <a href="/profile.html?user=${escapeHtml(username)}">${escapeHtml(data.email)}</a>
-                            ${verifiedBadge}
+                            <a href="/profile.html?user=${escapeHtml(displayNick)}">${escapeHtml(displayNick)}</a>
+                            ${verified ? `<span class="verified-icon">${verifiedSVG}</span>` : ''}
                         </div>
                         <span class="post-date">${date}</span>
                     </div>
                     <div class="post-text">${escapeHtml(data.text)}</div>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <button class="like-btn ${liked ? 'liked' : ''}" data-postid="${postId}">❤️ ${data.likesCount || 0}</button>
-                        ${isOwner ? `<button class="delete-btn" data-id="${postId}">Удалить</button>` : ''}
-                    </div>
+                    ${isOwner ? `<button class="delete-btn" data-id="${postId}">Удалить</button>` : ''}
                 `;
                 feedList.appendChild(div);
-                
-                const likeBtn = div.querySelector('.like-btn');
-                if (likeBtn && currentUser) {
-                    likeBtn.onclick = () => toggleLike(postId, currentUser.uid);
-                }
                 if (isOwner) {
-                    const delBtn = div.querySelector('.delete-btn');
-                    delBtn.onclick = () => deleteDoc(doc(db, "posts", postId));
+                    div.querySelector('.delete-btn').onclick = () => deleteDoc(doc(db, "posts", postId));
                 }
             }
         });
     }
-    
+
     function escapeHtml(s) { return s ? s.replace(/[&<>]/g, m => m == '&' ? '&amp;' : m == '<' ? '&lt;' : '&gt;') : ''; }
-    
+
     onAuthStateChanged(auth, user => {
         if (user) {
             authDiv.style.display = 'none';
