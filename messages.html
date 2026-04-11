@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Личные сообщения — Glists</title>
+    <style>
+        :root { --bg-body: #f0f2f5; --bg-container: white; --text-primary: #1e2a3e; --border-color: #ddd; --message-bg: #e9ecef; --own-message-bg: #1877f2; }
+        body.dark { --bg-body: #1a1a2e; --bg-container: #16213e; --text-primary: #eee; --border-color: #2c3e50; --message-bg: #0f3460; --own-message-bg: #0a58ca; }
+        body { font-family: system-ui; background: var(--bg-body); margin: 0; padding: 20px; transition: background 0.2s; }
+        .container { max-width: 600px; margin: auto; background: var(--bg-container); border-radius: 16px; padding: 20px; }
+        .messages-list { height: 400px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; margin-bottom: 10px; background: var(--bg-container); }
+        .message { margin: 8px 0; padding: 8px; border-radius: 12px; max-width: 80%; word-wrap: break-word; }
+        .message.outgoing { background: var(--own-message-bg); color: white; margin-left: auto; text-align: right; }
+        .message.incoming { background: var(--message-bg); color: var(--text-primary); }
+        .input-area { display: flex; gap: 8px; }
+        .input-area input { flex: 1; padding: 8px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--bg-container); color: var(--text-primary); }
+        .back-link { display: inline-block; margin-top: 20px; color: #1877f2; text-decoration: none; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>💬 Личные сообщения</h1>
+    <div id="chatHeader"></div>
+    <div id="messagesList" class="messages-list">Загрузка...</div>
+    <div class="input-area" id="inputArea" style="display:none;">
+        <input type="text" id="messageInput" placeholder="Сообщение...">
+        <button id="sendBtn">Отправить</button>
+    </div>
+    <a href="/" class="back-link">← На главную</a>
+</div>
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, collection, query, where, orderBy, onSnapshot, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const config = {
+        apiKey: "AIzaSyCzqpQniq7LiwRZ_L_FKEsIXh6CfC76QHA",
+        authDomain: "myfirstsocialnetwork-0.firebaseapp.com",
+        projectId: "myfirstsocialnetwork-0",
+        storageBucket: "myfirstsocialnetwork-0.firebasestorage.app",
+        messagingSenderId: "557037045975",
+        appId: "1:557037045975:web:dbcbd7ca0111a1494ac892"
+    };
+    const app = initializeApp(config);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const params = new URLSearchParams(location.search);
+    const otherUsername = params.get('user');
+    let currentUser = null;
+    let otherUid = null;
+
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) { window.location.href = '/'; return; }
+        currentUser = user;
+        if (!otherUsername) {
+            document.getElementById('messagesList').innerHTML = '<p>Не указан получатель</p>';
+            document.getElementById('inputArea').style.display = 'none';
+            return;
+        }
+        // получить uid получателя
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, where('uid', '==', currentUser.uid));
+        const mySnap = await getDocs(q);
+        if (mySnap.empty) return;
+        const myUsername = mySnap.docs[0].id;
+        document.getElementById('chatHeader').innerHTML = `<h3>Чат с @${escapeHtml(otherUsername)}</h3>`;
+        const otherQuery = query(usersRef, where('displayName', '==', otherUsername));
+        const otherSnap = await getDocs(otherQuery);
+        if (otherSnap.empty) {
+            document.getElementById('messagesList').innerHTML = '<p>Пользователь не найден</p>';
+            return;
+        }
+        otherUid = otherSnap.docs[0].data().uid;
+        const messagesQuery = query(collection(db, 'messages'), 
+            where('from', 'in', [[currentUser.uid, otherUid], [otherUid, currentUser.uid]]), 
+            orderBy('createdAt', 'asc'));
+        onSnapshot(messagesQuery, (snap) => {
+            const container = document.getElementById('messagesList');
+            container.innerHTML = '';
+            snap.forEach(docSnap => {
+                const msg = docSnap.data();
+                const isOutgoing = msg.from === currentUser.uid;
+                const div = document.createElement('div');
+                div.className = `message ${isOutgoing ? 'outgoing' : 'incoming'}`;
+                div.textContent = msg.text;
+                container.appendChild(div);
+            });
+            container.scrollTop = container.scrollHeight;
+        });
+        document.getElementById('inputArea').style.display = 'flex';
+    });
+
+    document.getElementById('sendBtn')?.addEventListener('click', async () => {
+        const text = document.getElementById('messageInput').value.trim();
+        if (!text || !currentUser || !otherUid) return;
+        await addDoc(collection(db, 'messages'), {
+            from: currentUser.uid,
+            to: otherUid,
+            text: text,
+            createdAt: new Date(),
+            read: false
+        });
+        document.getElementById('messageInput').value = '';
+    });
+
+    function escapeHtml(s) { return s ? s.replace(/[&<>]/g, m => m == '&' ? '&amp;' : m == '<' ? '&lt;' : '&gt;') : ''; }
+    if (localStorage.getItem('glists_theme') === 'dark') document.body.classList.add('dark');
+</script>
+</body>
+</html>

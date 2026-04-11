@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Уведомления — Glists</title>
+    <style>
+        :root { --bg-body: #f0f2f5; --bg-container: white; --text-primary: #1e2a3e; --border-color: #ddd; }
+        body.dark { --bg-body: #1a1a2e; --bg-container: #16213e; --text-primary: #eee; --border-color: #2c3e50; }
+        body { font-family: system-ui; background: var(--bg-body); margin: 0; padding: 20px; transition: background 0.2s; }
+        .container { max-width: 600px; margin: auto; background: var(--bg-container); border-radius: 16px; padding: 20px; }
+        .notification { padding: 12px; border-bottom: 1px solid var(--border-color); }
+        .notification.unread { background: #e0f0ff; }
+        body.dark .notification.unread { background: #0a2a4a; }
+        .back-link { display: inline-block; margin-top: 20px; color: #1877f2; text-decoration: none; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🔔 Уведомления</h1>
+    <div id="notificationsList">Загрузка...</div>
+    <a href="/" class="back-link">← На главную</a>
+</div>
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, collection, query, where, orderBy, onSnapshot, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const config = {
+        apiKey: "AIzaSyCzqpQniq7LiwRZ_L_FKEsIXh6CfC76QHA",
+        authDomain: "myfirstsocialnetwork-0.firebaseapp.com",
+        projectId: "myfirstsocialnetwork-0",
+        storageBucket: "myfirstsocialnetwork-0.firebasestorage.app",
+        messagingSenderId: "557037045975",
+        appId: "1:557037045975:web:dbcbd7ca0111a1494ac892"
+    };
+    const app = initializeApp(config);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) { window.location.href = '/'; return; }
+        const q = query(collection(db, 'notifications'), where('uid', '==', user.uid), orderBy('createdAt', 'desc'));
+        onSnapshot(q, (snap) => {
+            const container = document.getElementById('notificationsList');
+            container.innerHTML = '';
+            snap.forEach(docSnap => {
+                const n = docSnap.data();
+                const isUnread = !n.read;
+                const div = document.createElement('div');
+                div.className = `notification ${isUnread ? 'unread' : ''}`;
+                let text = '';
+                switch (n.type) {
+                    case 'like': text = `${n.fromName} лайкнул ваш пост`; break;
+                    case 'repost': text = `${n.fromName} репостнул ваш пост`; break;
+                    case 'comment': text = `${n.fromName} оставил комментарий`; break;
+                    case 'mention': text = `${n.fromName} упомянул вас`; break;
+                    default: text = `Новое уведомление`;
+                }
+                div.innerHTML = `<div>${text}</div><small>${new Date(n.createdAt.toDate()).toLocaleString()}</small>`;
+                container.appendChild(div);
+                if (isUnread) {
+                    updateDoc(doc(db, 'notifications', docSnap.id), { read: true });
+                }
+            });
+            if (snap.empty) container.innerHTML = '<p>Уведомлений пока нет</p>';
+        });
+    });
+    if (localStorage.getItem('glists_theme') === 'dark') document.body.classList.add('dark');
+</script>
+</body>
+</html>
