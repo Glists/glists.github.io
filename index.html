@@ -143,24 +143,10 @@
     
     function applyTranslations() {
         document.title = translations.site_title || "Glists";
-        // Статические элементы
-        document.querySelectorAll('[data-i18n]').forEach(el => {
-            const key = el.getAttribute('data-i18n');
-            if (translations[key]) {
-                if (el.tagName === 'INPUT' && el.placeholder !== undefined) el.placeholder = translations[key];
-                else if (el.tagName === 'BUTTON' || el.tagName === 'A') el.innerText = translations[key];
-                else el.innerText = translations[key];
-            }
-        });
-        // Динамические элементы (без data-i18n)
         const langToggle = document.getElementById('langToggle');
         if (langToggle) langToggle.innerText = currentLang === 'ru' ? translations.lang_ru : translations.lang_en;
         const themeToggle = document.getElementById('themeToggle');
         if (themeToggle) themeToggle.innerText = document.body.classList.contains('dark') ? translations.theme_light : translations.theme_dark;
-        const greetingDiv = document.getElementById('greeting');
-        if (greetingDiv && auth.currentUser) {
-            greetingDiv.innerHTML = `${translations.greeting}, <span id="currentUser"></span> <button id="logoutBtn">${translations.logout}</button>`;
-        }
         const feedTitle = document.getElementById('feedTitle');
         if (feedTitle) feedTitle.innerText = translations.feed_title;
         const postInput = document.getElementById('postInput');
@@ -177,7 +163,6 @@
         if (searchInput) searchInput.placeholder = translations.search_placeholder;
     }
     
-    // Инициализация языка
     const urlLang = getUrlParam('hl');
     if (urlLang && (urlLang === 'ru' || urlLang === 'en')) {
         currentLang = urlLang;
@@ -192,7 +177,6 @@
     } catch(e) { console.error(e); }
     applyTranslations();
     
-    // Переключение языка через кнопку (меняет ?hl и перезагружает)
     document.getElementById('langToggle').onclick = () => {
         const newLang = currentLang === 'ru' ? 'en' : 'ru';
         const url = new URL(window.location.href);
@@ -200,7 +184,6 @@
         window.location.href = url.toString();
     };
     
-    // Тема (без изменений)
     const themeToggle = document.getElementById('themeToggle');
     if (localStorage.getItem('glists_theme') === 'dark') document.body.classList.add('dark');
     themeToggle.onclick = () => {
@@ -210,7 +193,6 @@
     };
     themeToggle.innerText = document.body.classList.contains('dark') ? translations.theme_light : translations.theme_dark;
     
-    // DOM элементы
     const authDiv = document.getElementById('authContainer');
     const feedDiv = document.getElementById('feedContainer');
     const loginEmail = document.getElementById('loginEmail');
@@ -219,20 +201,28 @@
     const regEmail = document.getElementById('registerEmail');
     const regPass = document.getElementById('registerPassword');
     const regBtn = document.getElementById('registerBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const postInput = document.getElementById('postInput');
-    const publishBtn = document.getElementById('publishBtn');
-    const feedList = document.getElementById('feedList');
-    const currentUserSpan = document.getElementById('currentUser');
-    const postImageInput = document.getElementById('postImageInput');
-    const addPollBtn = document.getElementById('addPollBtn');
-    const searchToggle = document.getElementById('searchToggle');
-    const searchBox = document.getElementById('searchBox');
-    const searchInput = document.getElementById('searchInput');
+    
+    loginBtn.onclick = () => signInWithEmailAndPassword(auth, loginEmail.value, loginPass.value).catch(e => alert(e.message));
+    regBtn.onclick = async () => {
+        const email = regEmail.value, pass = regPass.value;
+        if (!email || !pass) return alert("Заполни поля");
+        try {
+            const cred = await createUserWithEmailAndPassword(auth, email, pass);
+            const username = email.split('@')[0];
+            const displayName = prompt("Введите ваше отображаемое имя:", username);
+            await setDoc(doc(db, "users", username), {
+                email, displayName: displayName || username, verified: false,
+                bio: "Новый пользователь Glists", createdAt: new Date(), uid: cred.user.uid, avatarUrl: '',
+                blockedBy: [], pinnedPostId: null
+            });
+            alert("Готово!");
+        } catch(e) { alert(e.message); }
+    };
     
     let currentPoll = null;
     const CLOUD_NAME = "dbmiuq6s7";
     const UPLOAD_PRESET = "glists_preset";
+    let unsubscribeFeed = null;
     
     const userCache = new Map();
     async function getUserInfo(uid) {
@@ -254,6 +244,13 @@
             }
         } catch(e) { console.error(e); }
         return null;
+    }
+    
+    async function sendNotification(toUid, type, fromUid, fromName, postId = null, commentId = null) {
+        if (toUid === fromUid) return;
+        await addDoc(collection(db, 'notifications'), {
+            uid: toUid, type, fromUid, fromName, postId, commentId, createdAt: new Date(), read: false
+        });
     }
     
     async function toggleReaction(postId, userId, type) {
@@ -292,72 +289,6 @@
         }
     }
     
-    async function repost(originalPostId, originalAuthorUid, originalAuthorUsername, originalAuthorDisplayName, originalText, currentUser) {
-        const info = await getUserInfo(currentUser.uid);
-        const authorUsername = info.username;
-        const authorDisplayName = info.displayName;
-        const authorAvatar = info.avatarUrl;
-        await addDoc(collection(db, "posts"), {
-            type: 'repost',
-            originalPostId, originalAuthorUid, originalAuthorUsername, originalAuthorDisplayName,
-            originalText: originalText.substring(0, 100),
-            uid: currentUser.uid, email: currentUser.email,
-            authorUsername, authorDisplayName, authorAvatar,
-            createdAt: new Date(), likesCount: 0, dislikesCount: 0,
-            edited: false, hasPoll: false, pollId: null, imageUrl: null, pinned: false
-        });
-        await sendNotification(originalAuthorUid, 'repost', currentUser.uid, authorDisplayName, originalPostId);
-    }
-    
-    async function addComment(postId, text, user) {
-        if (!text.trim()) return;
-        const info = await getUserInfo(user.uid);
-        const authorDisplayName = info.displayName;
-        const authorUsername = info.username;
-        const authorAvatar = info.avatarUrl;
-        const commentRef = await addDoc(collection(db, 'comments'), {
-            postId, text: text.trim(), uid: user.uid,
-            authorDisplayName, authorUsername, authorAvatar,
-            createdAt: new Date()
-        });
-        const postSnap = await getDoc(doc(db, 'posts', postId));
-        if (postSnap.exists() && postSnap.data().uid !== user.uid) {
-            await sendNotification(postSnap.data().uid, 'comment', user.uid, authorDisplayName, postId, commentRef.id);
-        }
-    }
-    
-    async function deleteComment(commentId) {
-        await deleteDoc(doc(db, 'comments', commentId));
-    }
-    
-    async function sendNotification(toUid, type, fromUid, fromName, postId = null, commentId = null) {
-        if (toUid === fromUid) return;
-        await addDoc(collection(db, 'notifications'), {
-            uid: toUid, type, fromUid, fromName, postId, commentId, createdAt: new Date(), read: false
-        });
-    }
-    
-    async function editPost(postId, newText) {
-        await updateDoc(doc(db, 'posts', postId), { text: newText, edited: true, editedAt: new Date() });
-    }
-    
-    async function pinPost(username, postId, currentUid) {
-        const userRef = doc(db, 'users', username);
-        const userSnap = await getDoc(userRef);
-        if (userSnap.exists() && userSnap.data().uid === currentUid) {
-            await updateDoc(userRef, { pinnedPostId: postId });
-            await updateDoc(doc(db, 'posts', postId), { pinned: true });
-        }
-    }
-    
-    async function blockUser(blockedUsername, currentUid) {
-        const blockedUserRef = doc(db, 'users', blockedUsername);
-        const blockedSnap = await getDoc(blockedUserRef);
-        if (blockedSnap.exists()) {
-            await updateDoc(blockedUserRef, { blockedBy: arrayUnion(currentUid) });
-        }
-    }
-    
     async function uploadImage(file) {
         const formData = new FormData();
         formData.append('file', file);
@@ -373,25 +304,11 @@
         return parsed;
     }
     
-    async function votePoll(pollId, optionIndex, userId) {
-        const pollRef = doc(db, 'polls', pollId);
-        const voteId = `${pollId}_${userId}`;
-        const voteRef = doc(db, 'pollVotes', voteId);
-        const voteSnap = await getDoc(voteRef);
-        if (voteSnap.exists()) return;
-        await setDoc(voteRef, { pollId, userId, optionIndex, votedAt: new Date() });
-        await updateDoc(pollRef, {
-            [`votes.${optionIndex}`]: increment(1),
-            totalVotes: increment(1)
-        });
-    }
-    
     function searchPosts(postsData, queryStr) {
         const lowerQuery = queryStr.toLowerCase();
         return postsData.filter(p => (p.text && p.text.toLowerCase().includes(lowerQuery)) || (p.authorDisplayName && p.authorDisplayName.toLowerCase().includes(lowerQuery)));
     }
     
-    let unsubscribeFeed = null;
     function subscribeToFeed() {
         if (unsubscribeFeed) unsubscribeFeed();
         const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
@@ -406,8 +323,11 @@
                 if (!mySnap.empty) blockedByMe = mySnap.docs[0].data().blockedBy || [];
             }
             const filteredPosts = postsData.filter(p => !blockedByMe.includes(p.uid));
-            let searchTerm = searchInput.value.trim();
+            const searchInput = document.getElementById('searchInput');
+            let searchTerm = searchInput ? searchInput.value.trim() : '';
             let displayPosts = searchTerm ? searchPosts(filteredPosts, searchTerm) : filteredPosts;
+            const feedList = document.getElementById('feedList');
+            if (!feedList) return;
             feedList.innerHTML = "";
             for (const data of displayPosts) {
                 const postId = data.id;
@@ -492,7 +412,6 @@
                     </div>
                 `;
                 feedList.appendChild(postDiv);
-                // Обработчики событий
                 postDiv.querySelector('.like-btn')?.addEventListener('click', () => toggleReaction(postId, currentUserObj?.uid, 'like'));
                 postDiv.querySelector('.dislike-btn')?.addEventListener('click', () => toggleReaction(postId, currentUserObj?.uid, 'dislike'));
                 if (currentUserObj) {
@@ -517,7 +436,6 @@
                 postDiv.querySelectorAll('.vote-option').forEach(btn => {
                     btn.addEventListener('click', () => votePoll(btn.dataset.pollid, parseInt(btn.dataset.option), currentUserObj.uid));
                 });
-                // Комментарии
                 const commentsQuery = query(collection(db, 'comments'), where('postId', '==', postId), orderBy('createdAt', 'asc'));
                 onSnapshot(commentsQuery, (commentsSnap) => {
                     const commentsListDiv = postDiv.querySelector('.comments-list');
@@ -554,91 +472,167 @@
         });
     }
     
-    function escapeHtml(s) { return s ? s.replace(/[&<>]/g, m => m == '&' ? '&amp;' : m == '<' ? '&lt;' : '&gt;') : ''; }
-    
-    loginBtn.onclick = () => signInWithEmailAndPassword(auth, loginEmail.value, loginPass.value).catch(e => alert(e.message));
-    regBtn.onclick = async () => {
-        const email = regEmail.value, pass = regPass.value;
-        if (!email || !pass) return alert("Заполни поля");
-        try {
-            const cred = await createUserWithEmailAndPassword(auth, email, pass);
-            const username = email.split('@')[0];
-            const displayName = prompt(translations.enter_display_name || "Введите ваше отображаемое имя:", username);
-            await setDoc(doc(db, "users", username), {
-                email, displayName: displayName || username, verified: false,
-                bio: "Новый пользователь Glists", createdAt: new Date(), uid: cred.user.uid, avatarUrl: '',
-                blockedBy: [], pinnedPostId: null
-            });
-            alert(translations.registration_success || "Готово!");
-        } catch(e) { alert(e.message); }
-    };
-    // logoutBtn.onclick = () => signOut(auth);
-    publishBtn.onclick = async () => {
-        const text = postInput.value.trim();
-        const imageFile = postImageInput.files[0];
-        let imageUrl = null;
-        if (imageFile) imageUrl = await uploadImage(imageFile);
-        const user = auth.currentUser;
-        if (!user) return alert(translations.login_first);
-        const info = await getUserInfo(user.uid);
+    async function repost(originalPostId, originalAuthorUid, originalAuthorUsername, originalAuthorDisplayName, originalText, currentUser) {
+        const info = await getUserInfo(currentUser.uid);
         const authorUsername = info.username;
         const authorDisplayName = info.displayName;
         const authorAvatar = info.avatarUrl;
-        let pollId = null;
-        if (currentPoll) {
-            const pollRef = await addDoc(collection(db, 'polls'), {
-                question: currentPoll.question,
-                options: currentPoll.options,
-                votes: {},
-                totalVotes: 0,
-                authorUid: user.uid,
-                createdAt: new Date()
-            });
-            pollId = pollRef.id;
-            currentPoll = null;
-        }
         await addDoc(collection(db, "posts"), {
-            type: 'post', text, uid: user.uid, email: user.email,
+            type: 'repost',
+            originalPostId, originalAuthorUid, originalAuthorUsername, originalAuthorDisplayName,
+            originalText: originalText.substring(0, 100),
+            uid: currentUser.uid, email: currentUser.email,
             authorUsername, authorDisplayName, authorAvatar,
             createdAt: new Date(), likesCount: 0, dislikesCount: 0,
-            edited: false, hasPoll: !!pollId, pollId, imageUrl, pinned: false
+            edited: false, hasPoll: false, pollId: null, imageUrl: null, pinned: false
         });
-        postInput.value = "";
-        postImageInput.value = "";
-    };
-    addPollBtn.onclick = () => {
-        const question = prompt(translations.poll_question);
-        if (!question) return;
-        const options = [];
-        let opt;
-        for (let i=0; i<5; i++) {
-            opt = prompt(`${translations.poll_option} ${i+1} (${translations.poll_leave_empty || 'оставьте пустым для завершения'}):`);
-            if (!opt) break;
-            options.push(opt);
+        await sendNotification(originalAuthorUid, 'repost', currentUser.uid, authorDisplayName, originalPostId);
+    }
+    
+    async function addComment(postId, text, user) {
+        if (!text.trim()) return;
+        const info = await getUserInfo(user.uid);
+        const authorDisplayName = info.displayName;
+        const authorUsername = info.username;
+        const authorAvatar = info.avatarUrl;
+        const commentRef = await addDoc(collection(db, 'comments'), {
+            postId, text: text.trim(), uid: user.uid,
+            authorDisplayName, authorUsername, authorAvatar,
+            createdAt: new Date()
+        });
+        const postSnap = await getDoc(doc(db, 'posts', postId));
+        if (postSnap.exists() && postSnap.data().uid !== user.uid) {
+            await sendNotification(postSnap.data().uid, 'comment', user.uid, authorDisplayName, postId, commentRef.id);
         }
-        if (options.length < 2) return alert(translations.poll_need_two_options);
-        currentPoll = { question, options };
-        alert(translations.poll_added);
-    };
-    searchToggle.onclick = () => { searchBox.style.display = searchBox.style.display === 'none' ? 'block' : 'none'; };
-    searchInput.oninput = () => { if (unsubscribeFeed) subscribeToFeed(); };
+    }
+    
+    async function deleteComment(commentId) {
+        await deleteDoc(doc(db, 'comments', commentId));
+    }
+    
+    async function editPost(postId, newText) {
+        await updateDoc(doc(db, 'posts', postId), { text: newText, edited: true, editedAt: new Date() });
+    }
+    
+    async function pinPost(username, postId, currentUid) {
+        const userRef = doc(db, 'users', username);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists() && userSnap.data().uid === currentUid) {
+            await updateDoc(userRef, { pinnedPostId: postId });
+            await updateDoc(doc(db, 'posts', postId), { pinned: true });
+        }
+    }
+    
+    async function blockUser(blockedUsername, currentUid) {
+        const blockedUserRef = doc(db, 'users', blockedUsername);
+        const blockedSnap = await getDoc(blockedUserRef);
+        if (blockedSnap.exists()) {
+            await updateDoc(blockedUserRef, { blockedBy: arrayUnion(currentUid) });
+        }
+    }
+    
+    async function votePoll(pollId, optionIndex, userId) {
+        const pollRef = doc(db, 'polls', pollId);
+        const voteId = `${pollId}_${userId}`;
+        const voteRef = doc(db, 'pollVotes', voteId);
+        const voteSnap = await getDoc(voteRef);
+        if (voteSnap.exists()) return;
+        await setDoc(voteRef, { pollId, userId, optionIndex, votedAt: new Date() });
+        await updateDoc(pollRef, {
+            [`votes.${optionIndex}`]: increment(1),
+            totalVotes: increment(1)
+        });
+    }
+    
+    function escapeHtml(s) { return s ? s.replace(/[&<>]/g, m => m == '&' ? '&amp;' : m == '<' ? '&lt;' : '&gt;') : ''; }
     
     onAuthStateChanged(auth, user => {
         if (user) {
             authDiv.style.display = 'none';
             feedDiv.style.display = 'block';
-            currentUserSpan.innerText = user.email;
-            // Обновляем приветствие после входа
+            
+            const currentUserSpan = document.getElementById('currentUser');
+            if (currentUserSpan) currentUserSpan.innerText = user.email;
             const greetingDiv = document.getElementById('greeting');
             if (greetingDiv) greetingDiv.innerHTML = `${translations.greeting}, <span id="currentUser"></span> <button id="logoutBtn">${translations.logout}</button>`;
+            
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) logoutBtn.onclick = () => signOut(auth);
+            
+            const publishBtn = document.getElementById('publishBtn');
+            const postInput = document.getElementById('postInput');
+            const postImageInput = document.getElementById('postImageInput');
+            if (publishBtn) {
+                publishBtn.onclick = async () => {
+                    const text = postInput.value.trim();
+                    const imageFile = postImageInput.files[0];
+                    let imageUrl = null;
+                    if (imageFile) imageUrl = await uploadImage(imageFile);
+                    const currentUserObj = auth.currentUser;
+                    if (!currentUserObj) return alert(translations.login_first);
+                    const info = await getUserInfo(currentUserObj.uid);
+                    const authorUsername = info.username;
+                    const authorDisplayName = info.displayName;
+                    const authorAvatar = info.avatarUrl;
+                    let pollId = null;
+                    if (currentPoll) {
+                        const pollRef = await addDoc(collection(db, 'polls'), {
+                            question: currentPoll.question,
+                            options: currentPoll.options,
+                            votes: {},
+                            totalVotes: 0,
+                            authorUid: currentUserObj.uid,
+                            createdAt: new Date()
+                        });
+                        pollId = pollRef.id;
+                        currentPoll = null;
+                    }
+                    await addDoc(collection(db, "posts"), {
+                        type: 'post', text, uid: currentUserObj.uid, email: currentUserObj.email,
+                        authorUsername, authorDisplayName, authorAvatar,
+                        createdAt: new Date(), likesCount: 0, dislikesCount: 0,
+                        edited: false, hasPoll: !!pollId, pollId, imageUrl, pinned: false
+                    });
+                    postInput.value = "";
+                    postImageInput.value = "";
+                };
+            }
+            
+            const addPollBtn = document.getElementById('addPollBtn');
+            if (addPollBtn) {
+                addPollBtn.onclick = () => {
+                    const question = prompt(translations.poll_question);
+                    if (!question) return;
+                    const options = [];
+                    let opt;
+                    for (let i=0; i<5; i++) {
+                        opt = prompt(`${translations.poll_option} ${i+1} (оставьте пустым для завершения):`);
+                        if (!opt) break;
+                        options.push(opt);
+                    }
+                    if (options.length < 2) return alert(translations.poll_need_two_options);
+                    currentPoll = { question, options };
+                    alert(translations.poll_added);
+                };
+            }
+            
+            const searchToggle = document.getElementById('searchToggle');
+            const searchBox = document.getElementById('searchBox');
+            if (searchToggle) {
+                searchToggle.onclick = () => { searchBox.style.display = searchBox.style.display === 'none' ? 'block' : 'none'; };
+            }
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.oninput = () => { if (unsubscribeFeed) subscribeToFeed(); };
+            }
+            
             subscribeToFeed();
-			const logoutBtn = document.getElementById('logoutBtn');
-			if (logoutBtn) logoutBtn.onclick = () => signOut(auth);
         } else {
             authDiv.style.display = 'flex';
             feedDiv.style.display = 'none';
             if (unsubscribeFeed) unsubscribeFeed();
-            feedList.innerHTML = "";
+            const feedList = document.getElementById('feedList');
+            if (feedList) feedList.innerHTML = "";
         }
     });
 </script>
