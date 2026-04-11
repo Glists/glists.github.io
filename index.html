@@ -572,7 +572,7 @@
             alert(translations.registration_success || "Готово!");
         } catch(e) { alert(e.message); }
     };
-    logoutBtn.onclick = () => signOut(auth);
+    // logoutBtn.onclick = () => signOut(auth);
     publishBtn.onclick = async () => {
         const text = postInput.value.trim();
         const imageFile = postImageInput.files[0];
@@ -632,6 +632,8 @@
             const greetingDiv = document.getElementById('greeting');
             if (greetingDiv) greetingDiv.innerHTML = `${translations.greeting}, <span id="currentUser"></span> <button id="logoutBtn">${translations.logout}</button>`;
             subscribeToFeed();
+			const logoutBtn = document.getElementById('logoutBtn');
+			if (logoutBtn) logoutBtn.onclick = () => signOut(auth);
         } else {
             authDiv.style.display = 'flex';
             feedDiv.style.display = 'none';
