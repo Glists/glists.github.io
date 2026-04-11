@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Моя Соцсеть — Чайник Лента</title>
+    <!-- Firebase SDK (последние версии) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // TODO: СЮДА ВСТАВИТЬ СВОЙ КОНФИГ ИЗ FIREBASE (скопируешь позже)
+        const firebaseConfig = {
+			apiKey: "AIzaSyCzqpQniq7LiwRZ_L_FKEsIXh6CfC76QHA",
+			authDomain: "myfirstsocialnetwork-0.firebaseapp.com",
+			projectId: "myfirstsocialnetwork-0",
+			storageBucket: "myfirstsocialnetwork-0.firebasestorage.app",
+			messagingSenderId: "557037045975",
+			appId: "1:557037045975:web:dbcbd7ca0111a1494ac892",
+			measurementId: "G-YXT6783VPM"   // эту строчку можно оставить или удалить — не важно
+		};
+
+        // Инициализация
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // DOM элементы
+        const authContainer = document.getElementById('authContainer');
+        const feedContainer = document.getElementById('feedContainer');
+        const loginEmail = document.getElementById('loginEmail');
+        const loginPassword = document.getElementById('loginPassword');
+        const loginBtn = document.getElementById('loginBtn');
+        const registerEmail = document.getElementById('registerEmail');
+        const registerPassword = document.getElementById('registerPassword');
+        const registerBtn = document.getElementById('registerBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const postInput = document.getElementById('postInput');
+        const publishBtn = document.getElementById('publishBtn');
+        const feedList = document.getElementById('feedList');
+        const currentUserSpan = document.getElementById('currentUser');
+
+        // Вход
+        loginBtn.onclick = () => {
+            signInWithEmailAndPassword(auth, loginEmail.value, loginPassword.value)
+                .catch(err => alert("Ошибка входа: " + err.message));
+        };
+        // Регистрация
+        registerBtn.onclick = () => {
+            createUserWithEmailAndPassword(auth, registerEmail.value, registerPassword.value)
+                .then(() => { alert("Регистрация успешна! Теперь вы вошли."); })
+                .catch(err => alert("Ошибка регистрации: " + err.message));
+        };
+        // Выход
+        logoutBtn.onclick = () => signOut(auth);
+
+        // Добавление поста
+        publishBtn.onclick = async () => {
+            const text = postInput.value.trim();
+            if (!text) return alert("Напишите текст поста");
+            const user = auth.currentUser;
+            if (!user) return alert("Вы не авторизованы");
+            await addDoc(collection(db, "posts"), {
+                text: text,
+                uid: user.uid,
+                email: user.email,
+                createdAt: new Date()
+            });
+            postInput.value = "";
+        };
+
+        // Реальное обновление ленты
+        function subscribeToFeed() {
+            const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+            onSnapshot(q, (snapshot) => {
+                feedList.innerHTML = "";
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const postId = docSnap.id;
+                    const date = data.createdAt ? new Date(data.createdAt.toDate()).toLocaleString() : "только что";
+                    const isOwner = auth.currentUser && auth.currentUser.uid === data.uid;
+                    const postDiv = document.createElement('div');
+                    postDiv.className = 'post';
+                    postDiv.innerHTML = `
+                        <div class="post-header">
+                            <strong>${escapeHtml(data.email)}</strong> 
+                            <span class="post-date">${date}</span>
+                        </div>
+                        <div class="post-text">${escapeHtml(data.text)}</div>
+                        ${isOwner ? `<button class="delete-btn" data-id="${postId}">🗑 Удалить</button>` : ''}
+                    `;
+                    feedList.appendChild(postDiv);
+                    // вешаем удаление
+                    if (isOwner) {
+                        const delBtn = postDiv.querySelector('.delete-btn');
+                        delBtn.onclick = () => deleteDoc(doc(db, "posts", postId));
+                    }
+                });
+            });
+        }
+
+        // Простейшая защита от XSS
+        function escapeHtml(str) {
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        // Следим за состоянием входа
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                authContainer.style.display = 'none';
+                feedContainer.style.display = 'block';
+                currentUserSpan.innerText = user.email;
+                subscribeToFeed();  // начинаем слушать посты
+            } else {
+                authContainer.style.display = 'flex';
+                feedContainer.style.display = 'none';
+                feedList.innerHTML = "";
+            }
+        });
+    </script>
+    <style>
+        * { box-sizing: border-box; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+        body { background: #f0f2f5; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 20px; }
+        h1 { font-size: 1.8rem; margin: 0 0 10px 0; color: #1877f2; }
+        .auth-box { display: flex; flex-direction: column; gap: 15px; }
+        .auth-row { display: flex; gap: 10px; flex-wrap: wrap; border-top: 1px solid #ddd; padding-top: 15px; }
+        .auth-row:first-child { border-top: none; padding-top: 0; }
+        input, button { padding: 12px; border-radius: 8px; border: 1px solid #ddd; font-size: 1rem; }
+        input { flex: 1; }
+        button { background: #1877f2; color: white; border: none; cursor: pointer; font-weight: bold; }
+        button:hover { background: #0e5dc7; }
+        .logout-btn { background: #e4e6eb; color: black; margin-bottom: 15px; }
+        .post-form { display: flex; gap: 10px; margin: 20px 0; }
+        .post-form input { flex: 1; }
+        .post { background: #f8f9fa; border-radius: 12px; padding: 12px; margin-bottom: 12px; border-left: 4px solid #1877f2; }
+        .post-header { display: flex; justify-content: space-between; font-size: 0.85rem; color: #555; margin-bottom: 8px; }
+        .post-text { font-size: 1rem; word-wrap: break-word; margin-bottom: 8px; }
+        .delete-btn { background: #dc3545; color: white; border: none; border-radius: 20px; padding: 5px 12px; font-size: 0.75rem; cursor: pointer; }
+        .delete-btn:hover { background: #b02a37; }
+        .feed-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        hr { margin: 15px 0; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📱 Моя Соцсеть</h1>
+    <!-- Блок входа/регистрации -->
+    <div id="authContainer" class="auth-box">
+        <div class="auth-row">
+            <input type="email" id="loginEmail" placeholder="Почта">
+            <input type="password" id="loginPassword" placeholder="Пароль">
+            <button id="loginBtn">Вход</button>
+        </div>
+        <div class="auth-row">
+            <input type="email" id="registerEmail" placeholder="Новая почта">
+            <input type="password" id="registerPassword" placeholder="Новый пароль">
+            <button id="registerBtn">Регистрация</button>
+        </div>
+    </div>
+
+    <!-- Лента (видна только после входа) -->
+    <div id="feedContainer" style="display: none;">
+        <div class="feed-header">
+            <span>Привет, <span id="currentUser"></span>!</span>
+            <button id="logoutBtn" class="logout-btn">🚪 Выйти</button>
+        </div>
+        <div class="post-form">
+            <input type="text" id="postInput" placeholder="Что нового, пахан?">
+            <button id="publishBtn">Опубликовать</button>
+        </div>
+        <hr>
+        <h3>Лента:</h3>
+        <div id="feedList"></div>
+    </div>
+</div>
+</body>
+</html>
