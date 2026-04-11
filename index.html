@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <title>Glists</title>
     <style>
-        /* ----- CSS переменные для тем ----- */
         :root {
             --bg-body: #f0f2f5;
             --bg-container: white;
@@ -12,6 +11,7 @@
             --text-secondary: #555;
             --border-color: #ddd;
             --post-bg: #f8f9fa;
+            --comment-bg: #f1f3f5;
             --like-btn: #1877f2;
             --like-btn-active: #e0245e;
         }
@@ -22,6 +22,7 @@
             --text-secondary: #aaa;
             --border-color: #2c3e50;
             --post-bg: #0f3460;
+            --comment-bg: #1a2a4a;
             --like-btn: #4a9eff;
             --like-btn-active: #ff4d6d;
         }
@@ -38,12 +39,21 @@
         .post-header { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.8rem; color: var(--text-secondary); }
         .post-author { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .post-author a { color: var(--text-primary); text-decoration: none; font-weight: bold; }
-        .post-author a:hover { text-decoration: underline; }
         .small-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #1877f2; display: inline-flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1rem; }
-        .delete-btn { background: #dc3545; color: white; border: none; border-radius: 20px; padding: 4px 12px; cursor: pointer; }
+        .delete-btn, .delete-comment-btn { background: #dc3545; color: white; border: none; border-radius: 20px; padding: 4px 12px; cursor: pointer; font-size: 0.7rem; }
         .verified-icon { display: inline-flex; margin-left: 4px; vertical-align: middle; }
         .like-btn { background: none; border: none; cursor: pointer; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 20px; color: var(--like-btn); }
         .like-btn.liked { color: var(--like-btn-active); font-weight: bold; }
+        .comments-section { margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--border-color); }
+        .comment { display: flex; gap: 8px; margin: 8px 0; background: var(--comment-bg); border-radius: 12px; padding: 6px 10px; align-items: flex-start; }
+        .comment-avatar { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; background: #1877f2; display: inline-flex; align-items: center; justify-content: center; color: white; font-size: 0.7rem; }
+        .comment-content { flex: 1; }
+        .comment-author { font-weight: bold; font-size: 0.8rem; }
+        .comment-text { font-size: 0.85rem; word-wrap: break-word; }
+        .comment-date { font-size: 0.7rem; color: var(--text-secondary); margin-left: 8px; }
+        .add-comment { display: flex; gap: 8px; margin-top: 8px; }
+        .add-comment input { flex: 1; margin: 0; padding: 6px; font-size: 0.8rem; }
+        .add-comment button { margin: 0; padding: 6px 12px; }
     </style>
 </head>
 <body>
@@ -83,50 +93,23 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // SVG верификации
     const verifiedSVG = `<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path fill="rgb(0, 149, 246)" d="M8.248 2.87a2.198 2.198 0 0 1 3.504 0c.48.633 1.264.958 2.05.85a2.198 2.198 0 0 1 2.478 2.477 2.2 2.2 0 0 0 .85 2.051 2.198 2.198 0 0 1 0 3.504 2.2 2.2 0 0 0-.85 2.05 2.198 2.198 0 0 1-2.477 2.478 2.2 2.2 0 0 0-2.051.85 2.198 2.198 0 0 1-3.504 0 2.2 2.2 0 0 0-2.05-.85 2.198 2.198 0 0 1-2.478-2.477 2.2 2.2 0 0 0-.85-2.051 2.198 2.198 0 0 1 0-3.504c.633-.48.958-1.264.85-2.05A2.198 2.198 0 0 1 6.197 3.72a2.2 2.2 0 0 0 2.051-.85"></path><path fill="#fff" fill-rule="evenodd" d="M13.765 7.205a.75.75 0 0 1 .03 1.06l-4.25 4.5a.75.75 0 0 1-1.047.042l-2.25-2.025A.75.75 0 0 1 7.25 9.667l1.706 1.536 3.748-3.968a.75.75 0 0 1 1.06-.03z" clip-rule="evenodd"></path></svg>`;
 
-    // Локализация
     const translations = {
-        ru: { greeting: "Привет", feedTitle: "Лента:", placeholder: "Что нового?", login: "Вход", register: "Регистрация", logout: "Выйти", publish: "Опубликовать", like: "Нравится", delete: "Удалить" },
-        en: { greeting: "Hello", feedTitle: "Feed:", placeholder: "What's new?", login: "Login", register: "Register", logout: "Logout", publish: "Publish", like: "Like", delete: "Delete" }
+        ru: { greeting: "Привет", feedTitle: "Лента:", placeholder: "Что нового?", login: "Вход", register: "Регистрация", logout: "Выйти", publish: "Опубликовать", like: "Нравится", delete: "Удалить", addComment: "Написать комментарий", commentPlaceholder: "Ваш комментарий..." },
+        en: { greeting: "Hello", feedTitle: "Feed:", placeholder: "What's new?", login: "Login", register: "Register", logout: "Logout", publish: "Publish", like: "Like", delete: "Delete", addComment: "Add comment", commentPlaceholder: "Your comment..." }
     };
     let currentLang = localStorage.getItem('glists_lang') || 'ru';
-    function setLanguage(lang) {
-        currentLang = lang;
-        localStorage.setItem('glists_lang', lang);
-        document.getElementById('langToggle').innerText = lang === 'ru' ? '🌐 EN' : '🌐 RU';
-        if (auth.currentUser) updateUIText();
-    }
-    function updateUIText() {
-        const t = translations[currentLang];
-        if (t) {
-            document.getElementById('greeting').innerHTML = `${t.greeting}, <span id="currentUser"></span> <button id="logoutBtn">${t.logout}</button>`;
-            document.getElementById('feedTitle').innerText = t.feedTitle;
-            postInput.placeholder = t.placeholder;
-            loginBtn.innerText = t.login;
-            registerBtn.innerText = t.register;
-            publishBtn.innerText = t.publish;
-        }
-    }
-    document.getElementById('langToggle').onclick = () => {
-        currentLang = currentLang === 'ru' ? 'en' : 'ru';
-        setLanguage(currentLang);
-        if (auth.currentUser) updateUIText();
-    };
+    function setLanguage(lang) { currentLang = lang; localStorage.setItem('glists_lang', lang); document.getElementById('langToggle').innerText = lang === 'ru' ? '🌐 EN' : '🌐 RU'; if (auth.currentUser) updateUIText(); }
+    function updateUIText() { const t = translations[currentLang]; if (t) { document.getElementById('greeting').innerHTML = `${t.greeting}, <span id="currentUser"></span> <button id="logoutBtn">${t.logout}</button>`; document.getElementById('feedTitle').innerText = t.feedTitle; postInput.placeholder = t.placeholder; loginBtn.innerText = t.login; registerBtn.innerText = t.register; publishBtn.innerText = t.publish; } }
+    document.getElementById('langToggle').onclick = () => { currentLang = currentLang === 'ru' ? 'en' : 'ru'; setLanguage(currentLang); if (auth.currentUser) updateUIText(); };
     setLanguage(currentLang);
 
-    // Тёмная тема
     const themeToggle = document.getElementById('themeToggle');
     if (localStorage.getItem('glists_theme') === 'dark') document.body.classList.add('dark');
-    themeToggle.onclick = () => {
-        document.body.classList.toggle('dark');
-        localStorage.setItem('glists_theme', document.body.classList.contains('dark') ? 'dark' : 'light');
-        themeToggle.innerText = document.body.classList.contains('dark') ? '☀️ Светлая' : '🌙 Тёмная';
-    };
+    themeToggle.onclick = () => { document.body.classList.toggle('dark'); localStorage.setItem('glists_theme', document.body.classList.contains('dark') ? 'dark' : 'light'); themeToggle.innerText = document.body.classList.contains('dark') ? '☀️ Светлая' : '🌙 Тёмная'; };
     themeToggle.innerText = document.body.classList.contains('dark') ? '☀️ Светлая' : '🌙 Тёмная';
 
-    // DOM элементы
     const authDiv = document.getElementById('authContainer');
     const feedDiv = document.getElementById('feedContainer');
     const loginEmail = document.getElementById('loginEmail');
@@ -141,7 +124,6 @@
     const feedList = document.getElementById('feedList');
     const currentUserSpan = document.getElementById('currentUser');
 
-    // Кэш пользователей (uid -> данные)
     const userCache = new Map();
     async function getUserInfo(uid) {
         if (userCache.has(uid)) return userCache.get(uid);
@@ -163,7 +145,6 @@
         return null;
     }
 
-    // Лайк
     async function toggleLike(postId, userId) {
         const likeRef = doc(db, 'likes', `${postId}_${userId}`);
         const likeSnap = await getDoc(likeRef);
@@ -176,56 +157,24 @@
         }
     }
 
-    // Вход
-    loginBtn.onclick = () => signInWithEmailAndPassword(auth, loginEmail.value, loginPass.value).catch(e => alert(e.message));
-    
-    // Регистрация
-    regBtn.onclick = async () => {
-        const email = regEmail.value, pass = regPass.value;
-        if (!email || !pass) return alert("Заполни поля");
-        try {
-            const cred = await createUserWithEmailAndPassword(auth, email, pass);
-            const username = email.split('@')[0];
-            const displayName = prompt("Введите ваше отображаемое имя:", username);
-            await setDoc(doc(db, "users", username), {
-                email: email,
-                displayName: displayName || username,
-                verified: false,
-                bio: "Новый пользователь Glists",
-                createdAt: new Date(),
-                uid: cred.user.uid,
-                avatarUrl: ''
-            });
-            alert("Готово!");
-        } catch(e) { alert(e.message); }
-    };
-    
-    logoutBtn.onclick = () => signOut(auth);
-    
-    // Публикация поста
-    publishBtn.onclick = async () => {
-        const text = postInput.value.trim();
-        if (!text) return alert("Напиши пост");
-        const user = auth.currentUser;
-        if (!user) return alert("Войди");
+    async function addComment(postId, text, user) {
+        if (!text.trim()) return;
         const info = await getUserInfo(user.uid);
+        const authorDisplayName = info ? info.displayName : user.email.split('@')[0];
         const authorUsername = info ? info.username : user.email.split('@')[0];
-        const authorDisplayName = info ? info.displayName : authorUsername;
         const authorAvatar = info ? info.avatarUrl : '';
-        await addDoc(collection(db, "posts"), {
-            text,
+        await addDoc(collection(db, 'comments'), {
+            postId, text: text.trim(),
             uid: user.uid,
-            email: user.email,
-            authorUsername,
-            authorDisplayName,
-            authorAvatar,
-            createdAt: new Date(),
-            likesCount: 0
+            authorDisplayName, authorUsername, authorAvatar,
+            createdAt: new Date()
         });
-        postInput.value = "";
-    };
+    }
 
-    // Лента
+    async function deleteComment(commentId) {
+        await deleteDoc(doc(db, 'comments', commentId));
+    }
+
     function subscribeToFeed() {
         const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
         onSnapshot(q, async (snap) => {
@@ -236,21 +185,16 @@
                 const postId = docSnap.id;
                 const date = data.createdAt ? new Date(data.createdAt.toDate()).toLocaleString() : "";
                 const isOwner = currentUser && currentUser.uid === data.uid;
-                
-                // Лайкнут ли текущий пользователь
                 let liked = false;
                 if (currentUser) {
                     const likeRef = doc(db, 'likes', `${postId}_${currentUser.uid}`);
                     const likeSnap = await getDoc(likeRef);
                     liked = likeSnap.exists();
                 }
-                
-                // Данные автора (из поста или из кэша)
                 let displayName = data.authorDisplayName;
                 let authorUsername = data.authorUsername;
                 let avatarUrl = data.authorAvatar;
                 let verified = false;
-                
                 if (!displayName || !authorUsername) {
                     const info = await getUserInfo(data.uid);
                     if (info) {
@@ -266,15 +210,12 @@
                     const info = await getUserInfo(data.uid);
                     if (info) verified = info.verified;
                 }
+                const avatarHtml = avatarUrl ? `<img src="${escapeHtml(avatarUrl)}" class="small-avatar">` : `<div class="small-avatar">${displayName.charAt(0).toUpperCase()}</div>`;
                 
-                // HTML аватарки (картинка или инициал)
-                const avatarHtml = avatarUrl
-                    ? `<img src="${escapeHtml(avatarUrl)}" class="small-avatar" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">`
-                    : `<div class="small-avatar" style="width:32px;height:32px;border-radius:50%;background:#1877f2;display:inline-flex;align-items:center;justify-content:center;color:white;">${displayName.charAt(0).toUpperCase()}</div>`;
-                
-                const div = document.createElement('div');
-                div.className = 'post';
-                div.innerHTML = `
+                const postDiv = document.createElement('div');
+                postDiv.className = 'post';
+                postDiv.id = `post-${postId}`;
+                postDiv.innerHTML = `
                     <div class="post-header">
                         <div class="post-author">
                             ${avatarHtml}
@@ -288,17 +229,96 @@
                         <button class="like-btn ${liked ? 'liked' : ''}" data-postid="${postId}">❤️ ${data.likesCount || 0}</button>
                         ${isOwner ? `<button class="delete-btn" data-id="${postId}">${translations[currentLang].delete}</button>` : ''}
                     </div>
+                    <div class="comments-section" id="comments-${postId}">
+                        <div class="comments-list"></div>
+                        <div class="add-comment">
+                            <input type="text" placeholder="${translations[currentLang].commentPlaceholder}" class="comment-input">
+                            <button class="add-comment-btn">${translations[currentLang].addComment}</button>
+                        </div>
+                    </div>
                 `;
-                feedList.appendChild(div);
+                feedList.appendChild(postDiv);
                 
-                const likeBtn = div.querySelector('.like-btn');
+                const likeBtn = postDiv.querySelector('.like-btn');
                 if (likeBtn && currentUser) likeBtn.onclick = () => toggleLike(postId, currentUser.uid);
-                if (isOwner) div.querySelector('.delete-btn').onclick = () => deleteDoc(doc(db, "posts", postId));
+                if (isOwner) postDiv.querySelector('.delete-btn').onclick = () => deleteDoc(doc(db, "posts", postId));
+                
+                // Подписка на комментарии для этого поста
+                const commentsQuery = query(collection(db, 'comments'), where('postId', '==', postId), orderBy('createdAt', 'asc'));
+                onSnapshot(commentsQuery, (commentsSnap) => {
+                    const commentsListDiv = postDiv.querySelector('.comments-list');
+                    if (!commentsListDiv) return;
+                    commentsListDiv.innerHTML = '';
+                    commentsSnap.forEach(commentDoc => {
+                        const c = commentDoc.data();
+                        const commentId = commentDoc.id;
+                        const cDate = c.createdAt ? new Date(c.createdAt.toDate()).toLocaleString() : '';
+                        const isCommentOwner = currentUser && currentUser.uid === c.uid;
+                        const commentAvatarHtml = c.authorAvatar ? `<img src="${escapeHtml(c.authorAvatar)}" class="comment-avatar" style="width:24px;height:24px;border-radius:50%;object-fit:cover;">` : `<div class="comment-avatar" style="width:24px;height:24px;border-radius:50%;background:#1877f2;display:inline-flex;align-items:center;justify-content:center;color:white;">${c.authorDisplayName?.charAt(0).toUpperCase() || '?'}</div>`;
+                        const commentDiv = document.createElement('div');
+                        commentDiv.className = 'comment';
+                        commentDiv.innerHTML = `
+                            ${commentAvatarHtml}
+                            <div class="comment-content">
+                                <div><span class="comment-author">${escapeHtml(c.authorDisplayName)}</span> <span class="comment-date">${cDate}</span></div>
+                                <div class="comment-text">${escapeHtml(c.text)}</div>
+                            </div>
+                            ${isCommentOwner ? `<button class="delete-comment-btn" data-commentid="${commentId}">🗑</button>` : ''}
+                        `;
+                        commentsListDiv.appendChild(commentDiv);
+                        if (isCommentOwner) {
+                            commentDiv.querySelector('.delete-comment-btn').onclick = () => deleteComment(commentId);
+                        }
+                    });
+                });
+                
+                const addCommentBtn = postDiv.querySelector('.add-comment-btn');
+                const commentInput = postDiv.querySelector('.comment-input');
+                addCommentBtn.onclick = async () => {
+                    if (!currentUser) { alert("Войдите, чтобы комментировать"); return; }
+                    const text = commentInput.value;
+                    if (!text.trim()) return;
+                    await addComment(postId, text, currentUser);
+                    commentInput.value = '';
+                };
             }
         });
     }
 
     function escapeHtml(s) { return s ? s.replace(/[&<>]/g, m => m == '&' ? '&amp;' : m == '<' ? '&lt;' : '&gt;') : ''; }
+
+    loginBtn.onclick = () => signInWithEmailAndPassword(auth, loginEmail.value, loginPass.value).catch(e => alert(e.message));
+    regBtn.onclick = async () => {
+        const email = regEmail.value, pass = regPass.value;
+        if (!email || !pass) return alert("Заполни поля");
+        try {
+            const cred = await createUserWithEmailAndPassword(auth, email, pass);
+            const username = email.split('@')[0];
+            const displayName = prompt("Введите ваше отображаемое имя:", username);
+            await setDoc(doc(db, "users", username), {
+                email, displayName: displayName || username, verified: false,
+                bio: "Новый пользователь Glists", createdAt: new Date(), uid: cred.user.uid, avatarUrl: ''
+            });
+            alert("Готово!");
+        } catch(e) { alert(e.message); }
+    };
+    logoutBtn.onclick = () => signOut(auth);
+    publishBtn.onclick = async () => {
+        const text = postInput.value.trim();
+        if (!text) return alert("Напиши пост");
+        const user = auth.currentUser;
+        if (!user) return alert("Войди");
+        const info = await getUserInfo(user.uid);
+        const authorUsername = info ? info.username : user.email.split('@')[0];
+        const authorDisplayName = info ? info.displayName : authorUsername;
+        const authorAvatar = info ? info.avatarUrl : '';
+        await addDoc(collection(db, "posts"), {
+            text, uid: user.uid, email: user.email,
+            authorUsername, authorDisplayName, authorAvatar,
+            createdAt: new Date(), likesCount: 0
+        });
+        postInput.value = "";
+    };
 
     onAuthStateChanged(auth, user => {
         if (user) {
