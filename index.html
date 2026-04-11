@@ -2,12 +2,11 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Glists</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, deleteDoc, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCzqpQniq7LiwRZ_L_FKEsIXh6CfC76QHA",
@@ -22,180 +21,101 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // DOM
-        const authContainer = document.getElementById('authContainer');
-        const feedContainer = document.getElementById('feedContainer');
+        const authDiv = document.getElementById('authContainer');
+        const feedDiv = document.getElementById('feedContainer');
         const loginEmail = document.getElementById('loginEmail');
-        const loginPassword = document.getElementById('loginPassword');
+        const loginPass = document.getElementById('loginPassword');
         const loginBtn = document.getElementById('loginBtn');
-        const registerEmail = document.getElementById('registerEmail');
-        const registerPassword = document.getElementById('registerPassword');
-        const registerBtn = document.getElementById('registerBtn');
+        const regEmail = document.getElementById('registerEmail');
+        const regPass = document.getElementById('registerPassword');
+        const regBtn = document.getElementById('registerBtn');
         const logoutBtn = document.getElementById('logoutBtn');
         const postInput = document.getElementById('postInput');
         const publishBtn = document.getElementById('publishBtn');
         const feedList = document.getElementById('feedList');
         const currentUserSpan = document.getElementById('currentUser');
 
-        // Вход
-        loginBtn.onclick = () => {
-            signInWithEmailAndPassword(auth, loginEmail.value, loginPassword.value)
-                .catch(err => alert("Ошибка входа: " + err.message));
-        };
-
-        // Регистрация + создание профиля в коллекции users (только если его нет)
-        registerBtn.onclick = async () => {
-            const email = registerEmail.value;
-            const password = registerPassword.value;
-            if (!email || !password) return alert("Введи почту и пароль");
+        loginBtn.onclick = () => signInWithEmailAndPassword(auth, loginEmail.value, loginPass.value).catch(e => alert(e.message));
+        regBtn.onclick = async () => {
+            const email = regEmail.value, pass = regPass.value;
+            if (!email || !pass) return alert("Заполни поля");
             try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                const user = userCredential.user;
+                const cred = await createUserWithEmailAndPassword(auth, email, pass);
                 const username = email.split('@')[0];
-                // Проверяем, существует ли уже документ пользователя
-                const userRef = doc(db, "users", username);
-                const userSnap = await getDoc(userRef);
-                if (!userSnap.exists()) {
-                    await setDoc(userRef, {
-                        email: user.email,
-                        displayName: username,
-                        verified: false,
-                        bio: "Новый пользователь Glists",
-                        createdAt: new Date(),
-                        uid: user.uid
-                    });
-                    alert("Регистрация успешна! Профиль создан.");
-                } else {
-                    alert("Регистрация успешна, профиль уже существовал.");
-                }
-            } catch (err) {
-                alert("Ошибка регистрации: " + err.message);
-            }
+                await setDoc(doc(db, "users", username), {
+                    email: email,
+                    displayName: username,
+                    verified: false,
+                    bio: "Новый пользователь Glists",
+                    createdAt: new Date(),
+                    uid: cred.user.uid
+                });
+                alert("Готово!");
+            } catch(e) { alert(e.message); }
         };
-
-        // Выход
         logoutBtn.onclick = () => signOut(auth);
-
-        // Добавление поста
         publishBtn.onclick = async () => {
             const text = postInput.value.trim();
-            if (!text) return alert("Напишите текст поста");
+            if (!text) return alert("Напиши пост");
             const user = auth.currentUser;
-            if (!user) return alert("Вы не авторизованы");
-            await addDoc(collection(db, "posts"), {
-                text: text,
-                uid: user.uid,
-                email: user.email,
-                createdAt: new Date()
-            });
+            if (!user) return alert("Войди");
+            await addDoc(collection(db, "posts"), { text, uid: user.uid, email: user.email, createdAt: new Date() });
             postInput.value = "";
         };
-
-        // Лента
         function subscribeToFeed() {
             const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
-            onSnapshot(q, (snapshot) => {
+            onSnapshot(q, (snap) => {
                 feedList.innerHTML = "";
-                snapshot.forEach(docSnap => {
+                snap.forEach(docSnap => {
                     const data = docSnap.data();
-                    const postId = docSnap.id;
-                    const date = data.createdAt ? new Date(data.createdAt.toDate()).toLocaleString() : "только что";
+                    const date = data.createdAt ? new Date(data.createdAt.toDate()).toLocaleString() : "";
                     const isOwner = auth.currentUser && auth.currentUser.uid === data.uid;
                     const username = data.email.split('@')[0];
-                    const postDiv = document.createElement('div');
-                    postDiv.className = 'post';
-                    postDiv.innerHTML = `
-                        <div class="post-header">
-                            <a href="/profile.html?user=${escapeHtml(username)}" style="color: inherit; text-decoration: none;">
-								<strong>${escapeHtml(data.email)}</strong>
-							</a>
-                            <span class="post-date">${date}</span>
-                        </div>
-                        <div class="post-text">${escapeHtml(data.text)}</div>
-                        ${isOwner ? `<button class="delete-btn" data-id="${postId}">🗑 Удалить</button>` : ''}
+                    const div = document.createElement('div');
+                    div.className = 'post';
+                    div.innerHTML = `
+                        <div><a href="/profile.html?user=${escapeHtml(username)}">${escapeHtml(data.email)}</a> <span style="font-size:0.8rem">${date}</span></div>
+                        <div>${escapeHtml(data.text)}</div>
+                        ${isOwner ? `<button class="delete-btn" data-id="${docSnap.id}">Удалить</button>` : ''}
                     `;
-                    feedList.appendChild(postDiv);
-                    if (isOwner) {
-                        const delBtn = postDiv.querySelector('.delete-btn');
-                        delBtn.onclick = () => deleteDoc(doc(db, "posts", postId));
-                    }
+                    feedList.appendChild(div);
+                    if (isOwner) div.querySelector('.delete-btn').onclick = () => deleteDoc(doc(db, "posts", docSnap.id));
                 });
             });
         }
-
-        function escapeHtml(str) {
-            return str.replace(/[&<>]/g, function(m) {
-                if (m === '&') return '&amp;';
-                if (m === '<') return '&lt;';
-                if (m === '>') return '&gt;';
-                return m;
-            });
-        }
-
-        onAuthStateChanged(auth, (user) => {
+        function escapeHtml(s) { return s.replace(/[&<>]/g, m => m == '&' ? '&amp;' : m == '<' ? '&lt;' : '&gt;'); }
+        onAuthStateChanged(auth, user => {
             if (user) {
-                authContainer.style.display = 'none';
-                feedContainer.style.display = 'block';
+                authDiv.style.display = 'none';
+                feedDiv.style.display = 'block';
                 currentUserSpan.innerText = user.email;
                 subscribeToFeed();
             } else {
-                authContainer.style.display = 'flex';
-                feedContainer.style.display = 'none';
+                authDiv.style.display = 'flex';
+                feedDiv.style.display = 'none';
                 feedList.innerHTML = "";
             }
         });
     </script>
     <style>
-        * { box-sizing: border-box; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
-        body { background: #f0f2f5; margin: 0; padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 20px; }
-        h1 { font-size: 1.8rem; margin: 0 0 10px 0; color: #1877f2; }
-        .auth-box { display: flex; flex-direction: column; gap: 15px; }
-        .auth-row { display: flex; gap: 10px; flex-wrap: wrap; border-top: 1px solid #ddd; padding-top: 15px; }
-        .auth-row:first-child { border-top: none; padding-top: 0; }
-        input, button { padding: 12px; border-radius: 8px; border: 1px solid #ddd; font-size: 1rem; }
-        input { flex: 1; }
-        button { background: #1877f2; color: white; border: none; cursor: pointer; font-weight: bold; }
-        button:hover { background: #0e5dc7; }
-        .logout-btn { background: #e4e6eb; color: black; margin-bottom: 15px; }
-        .post-form { display: flex; gap: 10px; margin: 20px 0; }
-        .post-form input { flex: 1; }
-        .post { background: #f8f9fa; border-radius: 12px; padding: 12px; margin-bottom: 12px; border-left: 4px solid #1877f2; }
-        .post-header { display: flex; justify-content: space-between; font-size: 0.85rem; color: #555; margin-bottom: 8px; }
-        .post-text { font-size: 1rem; word-wrap: break-word; margin-bottom: 8px; }
-        .delete-btn { background: #dc3545; color: white; border: none; border-radius: 20px; padding: 5px 12px; font-size: 0.75rem; cursor: pointer; }
-        .delete-btn:hover { background: #b02a37; }
-        .feed-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
-        hr { margin: 15px 0; }
+        body { background: #f0f2f5; font-family: sans-serif; padding: 20px; }
+        .container { max-width: 600px; margin: auto; background: white; border-radius: 16px; padding: 20px; }
+        input, button { padding: 10px; margin: 5px; }
+        .post { background: #f8f9fa; margin: 10px 0; padding: 10px; border-left: 4px solid #1877f2; }
+        .delete-btn { background: #dc3545; color: white; border: none; border-radius: 20px; padding: 4px 12px; cursor: pointer; }
     </style>
 </head>
 <body>
 <div class="container">
     <h1>🐛 Glists</h1>
-    <div id="authContainer" class="auth-box">
-        <div class="auth-row">
-            <input type="email" id="loginEmail" placeholder="Почта">
-            <input type="password" id="loginPassword" placeholder="Пароль">
-            <button id="loginBtn">Вход</button>
-        </div>
-        <div class="auth-row">
-            <input type="email" id="registerEmail" placeholder="Новая почта">
-            <input type="password" id="registerPassword" placeholder="Новый пароль">
-            <button id="registerBtn">Регистрация</button>
-        </div>
+    <div id="authContainer">
+        <div><input id="loginEmail" placeholder="Почта"> <input id="loginPassword" type="password" placeholder="Пароль"> <button id="loginBtn">Вход</button></div>
+        <div><input id="registerEmail" placeholder="Новая почта"> <input id="registerPassword" type="password" placeholder="Пароль"> <button id="registerBtn">Регистрация</button></div>
     </div>
-    <div id="feedContainer" style="display: none;">
-        <div class="feed-header">
-            <span>Привет, <span id="currentUser"></span>!</span>
-            <button id="logoutBtn" class="logout-btn">🚪 Выйти</button>
-        </div>
-        <div class="post-form">
-            <input type="text" id="postInput" placeholder="Что нового, Glists?">
-            <button id="publishBtn">Опубликовать</button>
-        </div>
-        <hr>
-        <h3>Лента:</h3>
-        <div id="feedList"></div>
+    <div id="feedContainer" style="display:none">
+        <div>Привет, <span id="currentUser"></span> <button id="logoutBtn">Выйти</button></div>
+        <div><input id="postInput" placeholder="Что нового?"> <button id="publishBtn">Опубликовать</button></div>
+        <hr><h3>Лента</h3><div id="feedList"></div>
     </div>
 </div>
 </body>

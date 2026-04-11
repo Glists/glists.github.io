@@ -4,11 +4,10 @@
     <meta charset="UTF-8">
     <title>Профиль Glists</title>
     <style>
-        body { font-family: system-ui; background: #f0f2f5; margin: 0; padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; padding: 20px; }
+        body { font-family: sans-serif; background: #f0f2f5; padding: 20px; }
+        .container { max-width: 600px; margin: auto; background: white; border-radius: 16px; padding: 20px; }
         .avatar { width: 80px; height: 80px; border-radius: 50%; background: #1877f2; color: white; display: flex; align-items: center; justify-content: center; font-size: 2rem; }
         .post { border-left: 4px solid #1877f2; margin: 10px 0; padding: 10px; background: #f8f9fa; }
-        .back-link { display: block; margin-top: 20px; }
     </style>
 </head>
 <body>
@@ -30,25 +29,32 @@
     const username = params.get('user');
     if (!username) document.getElementById('root').innerHTML = 'Не указан пользователь';
     else {
-        const userDoc = await getDoc(doc(db, 'users', username));
-        if (!userDoc.exists()) document.getElementById('root').innerHTML = `@${username} не найден <a href="/" class="back-link">На главную</a>`;
-        else {
-            const data = userDoc.data();
+        const userRef = doc(db, 'users', username);
+        const userSnap = await getDoc(userRef);
+        if (!userSnap.exists()) {
+            document.getElementById('root').innerHTML = `<p>Пользователь @${username} не найден</p><a href="/">На главную</a>`;
+        } else {
+            const data = userSnap.data();
             const postsQuery = query(collection(db, 'posts'), where('uid', '==', data.uid), orderBy('createdAt', 'desc'));
             const postsSnap = await getDocs(postsQuery);
             let postsHtml = '';
-            postsSnap.forEach(d => {
-                const p = d.data();
+            postsSnap.forEach(doc => {
+                const p = doc.data();
                 const date = p.createdAt ? new Date(p.createdAt.toDate()).toLocaleString() : '';
                 postsHtml += `<div class="post"><div>${date}</div><div>${escapeHtml(p.text)}</div></div>`;
             });
             document.getElementById('root').innerHTML = `
-                <div class="profile-header"><div class="avatar">${username[0].toUpperCase()}</div><div><h1>@${username} ${data.verified ? '✅' : ''}</h1><p>${escapeHtml(data.bio || '')}</p></div></div>
-                <h3>Посты</h3>${postsHtml || 'Нет постов'}<a href="/" class="back-link">← На главную</a>
+                <div style="display:flex; gap:20px; align-items:center;">
+                    <div class="avatar">${username[0].toUpperCase()}</div>
+                    <div><h1>@${username} ${data.verified ? '✅' : ''}</h1><p>${escapeHtml(data.bio || '')}</p></div>
+                </div>
+                <h3>Посты</h3>
+                ${postsHtml || '<p>Нет постов</p>'}
+                <a href="/">← На главную</a>
             `;
         }
     }
-    function escapeHtml(s) { return s.replace(/[&<>]/g, function(m){ return m=='&'?'&amp;': m=='<'?'&lt;': '&gt;';}); }
+    function escapeHtml(s) { return s.replace(/[&<>]/g, m => m == '&' ? '&amp;' : m == '<' ? '&lt;' : '&gt;'); }
 </script>
 </body>
 </html>
