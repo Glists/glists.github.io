@@ -82,18 +82,11 @@
   ],
   "screenshots": [
      {
-      "src": "/screenshot1.png",
+      "src": "/screenshot-mobile.png",
       "sizes": "1080x1920",
       "type": "image/png",
 	  "form_factor": "narrow",
-      "label": "Главная лента Glists"
-    },
-    {
-      "src": "/screenshot2.png",
-      "sizes": "1080x1920",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Профиль пользователя Glists"
+      "label": "Мобильная версия Glists"
     },
     {
       "src": "/screenshot-desktop.png",
