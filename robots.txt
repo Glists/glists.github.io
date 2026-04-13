@@ -1,0 +1,17 @@
+# robots.txt for Glists (https://glists.github.io)
+User-agent: *
+Disallow: /translations/
+Disallow: /edit-profile.html
+Disallow: /messages.html
+Disallow: /notifications.html
+Disallow: /profile.html?user=
+Disallow: /*?hl=
+
+# Разрешить индексацию главной, ленты, статических страниц профиля (без параметров)
+Allow: /$
+Allow: /index.html
+Allow: /profile.html
+Allow: /style.css
+
+# Карта сайта
+Sitemap: https://glists.github.io/sitemap.xml
