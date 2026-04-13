@@ -728,6 +728,51 @@
             if (feedList) feedList.innerHTML = "";
         }
     });
+		// Кнопка установки PWA
+	let deferredPrompt = null;
+
+	// Создаём кнопку (если её ещё нет)
+	const installButton = document.createElement('button');
+	installButton.id = 'installPwaBtn';
+	installButton.textContent = '📲 Установить приложение';
+	installButton.style.display = 'none';
+	installButton.style.position = 'fixed';
+	installButton.style.bottom = '20px';
+	installButton.style.right = '20px';
+	installButton.style.zIndex = '1000';
+	installButton.style.backgroundColor = '#1877f2';
+	installButton.style.color = 'white';
+	installButton.style.border = 'none';
+	installButton.style.borderRadius = '40px';
+	installButton.style.padding = '12px 20px';
+	installButton.style.cursor = 'pointer';
+	installButton.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+	installButton.style.fontWeight = 'bold';
+	document.body.appendChild(installButton);
+
+	// Перехватываем событие браузера
+	window.addEventListener('beforeinstallprompt', (e) => {
+	  e.preventDefault();
+	  deferredPrompt = e;
+	  installButton.style.display = 'block';
+	});
+
+	// Обработчик клика по кнопке
+	installButton.addEventListener('click', async () => {
+	  if (!deferredPrompt) return;
+	  deferredPrompt.prompt();
+	  const { outcome } = await deferredPrompt.userChoice;
+	  console.log(`Пользователь ${outcome === 'accepted' ? 'установил' : 'отказался'} PWA`);
+	  deferredPrompt = null;
+	  installButton.style.display = 'none';
+	});
+
+	// Скрываем кнопку, если уже установлено (необязательно)
+	window.addEventListener('appinstalled', () => {
+	  installButton.style.display = 'none';
+	  deferredPrompt = null;
+	  console.log('PWA успешно установлено');
+	});
 </script>
 </body>
 </html>
