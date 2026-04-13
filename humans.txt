@@ -1,0 +1,8 @@
+/* TEAM */
+    Creator: Normik Chel
+    Contact: https://t.me/normik_chel
+/* TECHNOLOGY */
+    Platform: GitHub Pages
+    Database: Firebase
+    Storage: Cloudinary
+    Languages: JavaScript, HTML, CSS

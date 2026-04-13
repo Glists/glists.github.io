@@ -2,7 +2,79 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Glists - Messages</title>
+	<!-- Фавиконки -->
+	<link rel="icon" type="image/x-icon" href="/favicon.ico">
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+	<link rel="manifest" href="/site.webmanifest"> <!-- создадим ниже -->
+	<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#1877f2"> <!-- опционально -->
+	<meta name="msapplication-TileColor" content="#1877f2">
+	<meta name="theme-color" content="#1877f2">
+	<!-- Базовые мета -->
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+	<meta name="description" content="Glists — тёмная социальная сеть с постами, опросами, лайками и сообщениями. Присоединяйся к Глистам!">
+	<meta name="keywords" content="социальная сеть, Глисты, Glists, посты, опросы, сообщения, тёмная тема, общение, лайки">
+	<meta name="author" content="Нормик Чел">
+	<meta name="copyright" content="Glists">
+	<meta name="robots" content="noindex, follow">
+	<meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+	<meta name="bingbot" content="index, follow">
+	<meta name="yandex" content="index, follow">
+	<link rel="canonical" href="https://glists.github.io/">
+
+	<!-- Альтернативные языки (если у тебя есть /?hl=ru и /?hl=en) -->
+	<link rel="alternate" hreflang="ru" href="https://glists.github.io/?hl=ru">
+	<link rel="alternate" hreflang="en" href="https://glists.github.io/?hl=en">
+	<link rel="alternate" hreflang="x-default" href="https://glists.github.io/">
+
+	<!-- Open Graph / Facebook / VK / Telegram / OK -->
+	<meta property="og:type" content="website">
+	<meta property="og:url" content="https://glists.github.io/">
+	<meta property="og:title" content="✉️ Сообщения |🐛 Glists">
+	<meta property="og:description" content="✉️ Сообщения в соцсети Glists 🐛">
+	<meta property="og:image" content="https://glists.github.io/android-chrome-512x512.png">
+	<meta property="og:image:width" content="512">
+	<meta property="og:image:height" content="512">
+	<meta property="og:image:alt" content="Glists логотип — жук">
+	<meta property="og:locale" content="ru_RU">
+	<meta property="og:locale:alternate" content="en_US">
+	<meta property="og:site_name" content="Glists">
+
+	<!-- Twitter Card (для твиттера) -->
+	<meta name="twitter:card" content="summary_large_image">
+	<meta name="twitter:url" content="https://glists.github.io/">
+	<meta name="twitter:title" content="Glists — соцсеть без цензуры">
+	<meta name="twitter:description" content="Посты, опросы, тёмная тема. Присоединяйся к Глистам!">
+	<meta name="twitter:image" content="https://glists.github.io/android-chrome-512x512.png">
+	<meta name="twitter:site" content="@glists">
+	<meta name="twitter:creator" content="@normicchel">
+
+	<!-- Для Telegram (использует Open Graph, но можно добавить специфическое) -->
+	<meta property="telegram:channel" content="@glists">
+
+	<!-- Для VK и OK достаточно Open Graph -->
+
+	<!-- Pinterest (необязательно) -->
+	<meta name="pinterest-rich-pin" content="false">
+
+	<!-- Гео-теги (не обязательно, но для полноты) -->
+	<meta name="geo.region" content="RU">
+	<meta name="geo.placename" content="Москва">
+
+	<!-- mobile web app (для iOS) -->
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	<meta name="apple-mobile-web-app-title" content="Glists">
+
+	<!-- MS Application -->
+	<meta name="application-name" content="Glists">
+	<meta name="msapplication-config" content="/browserconfig.xml"> <!-- создадим -->
+
+	<!-- Theme color для браузеров (Chrome, Edge, Firefox) -->
+	<meta name="theme-color" content="#1877f2">
+    <title>🐛 Glists — сообщения</title>
     <style>
         :root { --bg-body: #f0f2f5; --bg-container: white; --text-primary: #1e2a3e; --border-color: #ddd; --message-bg: #e9ecef; --own-message-bg: #1877f2; }
         body.dark { --bg-body: #1a1a2e; --bg-container: #16213e; --text-primary: #eee; --border-color: #2c3e50; --message-bg: #0f3460; --own-message-bg: #0a58ca; }
@@ -17,6 +89,26 @@
         .back-link { display: inline-block; margin-top: 20px; color: #1877f2; text-decoration: none; }
         .lang-toggle { background: #e4e6eb; border: none; border-radius: 20px; padding: 6px 12px; cursor: pointer; font-size: 0.9rem; margin-bottom: 15px; }
     </style>
+	<script type="application/ld+json">
+	{
+	  "@context": "https://schema.org",
+	  "@type": "SocialMediaPlatform",
+	  "name": "Glists",
+	  "alternateName": "Глисты",
+	  "url": "https://glists.github.io",
+	  "logo": "https://glists.github.io/android-chrome-512x512.png",
+	  "sameAs": [
+		"https://t.me/glists",
+		"https://twitter.com/glists"
+	  ],
+	  "description": "Социальная сеть для общения, создания постов, опросов, обмена сообщениями. Тёмная тема, верификация через паспорт, никакой цензуры.",
+	  "inLanguage": ["ru", "en"],
+	  "potentialAction": {
+		"@type": "JoinAction",
+		"target": "https://glists.github.io"
+	  }
+	}
+	</script>
 </head>
 <body>
 <div class="container">
