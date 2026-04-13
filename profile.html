@@ -33,14 +33,15 @@
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { getFirestore, doc, getDoc, collection, query, where, getDocs, orderBy, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    const config = {
-        apiKey: "AIzaSyCzqpQniq7LiwRZ_L_FKEsIXh6CfC76QHA",
-        authDomain: "myfirstsocialnetwork-0.firebaseapp.com",
-        projectId: "myfirstsocialnetwork-0",
-        storageBucket: "myfirstsocialnetwork-0.firebasestorage.app",
-        messagingSenderId: "557037045975",
-        appId: "1:557037045975:web:dbcbd7ca0111a1494ac892"
-    };
+	const firebaseConfig = {
+	  apiKey: "AIzaSyB_NKxMxFLg3gjgJqqJq_GsgAvvtz86mXA",
+	  authDomain: "myfirstsocialnetwork-1.firebaseapp.com",
+	  projectId: "myfirstsocialnetwork-1",
+	  storageBucket: "myfirstsocialnetwork-1.firebasestorage.app",
+	  messagingSenderId: "327472461874",
+	  appId: "1:327472461874:web:47729cf4fc8c732484e42b",
+	  measurementId: "G-K825X42BYP"
+	};
     const app = initializeApp(config);
     const db = getFirestore(app);
     const auth = getAuth(app);
