@@ -41,9 +41,9 @@
 		appId: "1:327472461874:web:47729cf4fc8c732484e42b",
 		measurementId: "G-K825X42BYP"
 	};
-    const app = initializeApp(config);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+	const app = initializeApp(firebaseConfig);  // ← исправлено
+	const db = getFirestore(app);
+	const auth = getAuth(app);
 
     // --- Переводы ---
     let translations = {};
